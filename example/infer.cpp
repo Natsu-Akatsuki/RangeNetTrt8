@@ -90,7 +90,7 @@ int main(int argc, const char *argv[]) {
   }
 
   // create a network
-  std::unique_ptr<cl::Net> net = cl::make_net(path, backend);
+  std::unique_ptr<cl::Net> net = cl::make_net(path);
 
   // set verbosity
   net->verbosity(verbose);

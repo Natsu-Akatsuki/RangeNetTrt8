@@ -5,23 +5,15 @@
  */
 #pragma once
 
-// For plugin factory
 #include <NvInfer.h>
 #include <NvOnnxParser.h>
-#include <NvOnnxParserRuntime.h>
-#include <cuda_runtime.h>
+#include <NvInferRuntime.h>
+#include <cuda_runtime_api.h>
 #include <fstream>
 #include <ios>
 #include <chrono>
 #include <numeric>
 #include "net.hpp"
-
-#define MAX_WORKSPACE_SIZE \
-  (1UL << 33)  // gpu workspace size (8gb is pretty good)
-#define MIN_WORKSPACE_SIZE (1UL << 20)  // gpu workspace size (pretty bad)
-
-#define DEVICE_DLA_0 0  // jetson DLA 0 enabled
-#define DEVICE_DLA_1 0  // jetson DLA 1 enabled
 
 using namespace nvinfer1;  // I'm taking a liberty because the code is
                            // unreadable otherwise
@@ -42,7 +34,7 @@ namespace segmentation {
 class Logger : public ILogger {
  public:
   void set_verbosity(bool verbose) { _verbose = verbose; }
-  void log(Severity severity, const char* msg) override {
+  void log(Severity severity, const char* msg)  noexcept override {
     if (_verbose) {
       switch (severity) {
         case Severity::kINTERNAL_ERROR:
@@ -157,14 +149,7 @@ class NetTensorRT : public Net {
    *
    * @param engine_path
    */
-  void serializeEngine(const std::string& engine_path);
-
-  /**
-   * @brief Generate an engine from ONNX model
-   *
-   * @param onnx_path path to onnx file
-   */
-  void generateEngine(const std::string& onnx_path);
+  void serializeEngine(const std::string &onnx_path, const std::string& engine_path);
 
   /**
    * @brief Prepare io buffers for inference with engine

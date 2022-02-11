@@ -27,8 +27,7 @@ namespace segmentation {
  * @param backend "tensorrt", only tensorrt implemented
  * @return std::unique_ptr<Net>
  */
-std::unique_ptr<Net> make_net(const std::string& path,
-                              const std::string& backend);
+std::unique_ptr<Net> make_net(const std::string& path);
 
 }  // namespace segmentation
 }  // namespace rangenet
