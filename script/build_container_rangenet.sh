@@ -1,23 +1,24 @@
 #!/bin/bash
-set -e
+
+# for debug
+# set -x 
+if [ ! -d ${HOME}/tmp} ]
+then
+    mkdir ${HOME}/tmp
+fi
+
+if [ ! -d ${HOME}/docker_ws} ]
+then
+    mkdir ${HOME}/docker_ws
+fi
 
 XAUTH=${HOME}/tmp/.docker.xauth
-if [ ! -f $XAUTH ]
-then
-    xauth_list=$(xauth nlist :0 | sed -e 's/^..../ffff/')
-    if [ ! -z "$xauth_list" ]
-    then
-        # hide the message "tmp/.docker.xauth does not exist"
-        echo $xauth_list | xauth -f $XAUTH nmerge - 2> /dev/null
-    else
-        touch $XAUTH
-    fi
-    chmod a+r $XAUTH
-fi
+touch $XAUTH
+xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | sudo xauth -f $XAUTH nmerge -
 
 # 参数配置
 set_container_name="--name=rangenet1.0"
-image_name="rangenet:1.0"
+image_name="registry.cn-hangzhou.aliyuncs.com/gdut-iidcc/rangenet:1.0"
 
 # 文件挂载
 set_volumes="--volume=${HOME}/docker_ws:/docker_ws:rw"
