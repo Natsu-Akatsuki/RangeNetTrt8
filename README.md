@@ -1,6 +1,12 @@
 # [RangeNetTrt8](https://github.com/Natsu-Akatsuki/RangeNetTrt8)
 
-本环境配置面向[rangenet](https://github.com/StephenYang190/rangenet_lib)项目旨将原工程部署到TensorRT8，ubuntu20.04中，:) 迁移完才发现[有人](https://github.com/StephenYang190/rangenet_lib)已经做过一样的工作
+本工程旨将[rangenet工程](https://github.com/PRBonn/rangenet_lib)部署到TensorRT8，ubuntu20.04中
+
+## Feature
+
+- 将代码部署环境提升到TensorRT8, ubuntu20.04
+- 提供docker环境
+- 修正了使用FP16，分割精度降低的问题[issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)。使模型在保有精度的同时，预测速度大大提升
 
 ## 方法一：docker
 
@@ -49,6 +55,8 @@ $ bash script/build_container_rangenet.sh
 **NOTE**
 
 首次运行生成TensorRT模型运行需要一段时间
+
+![img](https://uploader.shimo.im/f/cSWXaAwOq9jzNIcv.png!thumbnail?accessToken=eyJhbGciOiJIUzI1NiIsImtpZCI6ImRlZmF1bHQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhY2Nlc3NfcmVzb3VyY2UiLCJleHAiOjE2NDQ3MjE5NTksImciOiJRd3IzeHg4dnY5anZjcUNqIiwiaWF0IjoxNjQ0NzIxNjU5LCJ1c2VySWQiOjE3ODQ2NTA1fQ.aalZU_b-k0ilg08R1lfzBHirCLAqGTnQhpJngF9xYiA)
 
 ## 方法二：native PC
 

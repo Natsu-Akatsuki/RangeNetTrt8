@@ -428,8 +428,9 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
       1U << static_cast<uint32_t>(
           nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
   auto config = builder->createBuilderConfig();
-  config->setFlag(nvinfer1::BuilderFlag::kTF32);
+  config->setFlag(nvinfer1::BuilderFlag::kFP16);
   config->setMaxWorkspaceSize(1UL << 30);
+  config->setFlag(BuilderFlag::kPREFER_PRECISION_CONSTRAINTS);
 
   INetworkDefinition *network = builder->createNetworkV2(explicitBatch);
   assert(network != nullptr);
@@ -440,6 +441,11 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
                         static_cast<int>(Logger::Severity::kWARNING));
   // This function allows building and serialization of a network without
   // creating an engine note: this api from tensorrt 8.0.1
+  int i = 234;
+  auto layer = network->getLayer(i);
+  std::string layerName = layer->getName();
+  layer->setPrecision(nvinfer1::DataType::kFLOAT);
+
   nvinfer1::IHostMemory *plan =
       builder->buildSerializedNetwork(*network, *config);
   assert(plan != nullptr);
