@@ -64,6 +64,8 @@ class Net {
    * @return     the colored segmentation mask :)
    */
   std::vector<cv::Vec3b> getLabels(const std::vector<std::vector<float> > &semantic_scan, const uint32_t& num_points);
+  void getLabels(const std::vector<std::vector<float>> &semantic_scan,
+                 std::vector<int> &labels);
 
 
   /**

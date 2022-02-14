@@ -56,7 +56,7 @@ $ bash script/build_container_rangenet.sh
 
 首次运行生成TensorRT模型运行需要一段时间
 
-![img](https://uploader.shimo.im/f/cSWXaAwOq9jzNIcv.png!thumbnail?accessToken=eyJhbGciOiJIUzI1NiIsImtpZCI6ImRlZmF1bHQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhY2Nlc3NfcmVzb3VyY2UiLCJleHAiOjE2NDQ3MjE5NTksImciOiJRd3IzeHg4dnY5anZjcUNqIiwiaWF0IjoxNjQ0NzIxNjU5LCJ1c2VySWQiOjE3ODQ2NTA1fQ.aalZU_b-k0ilg08R1lfzBHirCLAqGTnQhpJngF9xYiA)
+<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ywkcwjdeu03nGHHW.png!thumbnail" alt="img" style="zoom:80%;" />
 
 ## 方法二：native PC
 

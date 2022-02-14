@@ -7,10 +7,13 @@ project(rangenet_lib)
 #endif ()
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STRICT_ANSI__")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STRICT_ANSI__")
+
+find_package(PCL REQUIRED QUIET COMPONENTS io)
+include_directories(${PCL_INCLUDE_DIRS})
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED)
@@ -129,6 +132,19 @@ target_link_libraries(infer
   ${Boost_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
   )
+
+
+add_library(infer_api example/infer_api.cpp)
+target_link_libraries(infer_api ${PCL_LIBRARIES} rangenet_lib
+  ${TENSORRT_LIBRARIES}
+  ${CUDA_LIBRARIES}
+  ${CUBLAS_LIBRARIES}
+  ${CUDA_curand_LIBRARY}
+  ${CUDNN_LIBRARY}
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${YAML_CPP_LIBRARIES})
 
 
 
