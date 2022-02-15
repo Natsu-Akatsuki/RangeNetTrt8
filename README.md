@@ -26,7 +26,7 @@ $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/docker_ws/RangeNetT
 - 下载onnx模型
 
 ```bash
-$ wget -c http://www.ipb.uni-bonn.de/html/projects/bonnetal/lidar/semantic/predictions/darknet53.tar.gz -O ~/docker_ws/RangeNetTrt8/src/darknet53.tar.gz
+$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/docker_ws/RangeNetTrt8/src/darknet53.tar.gz
 $ cd ~/docker_ws/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
 ```
 
@@ -56,7 +56,7 @@ $ bash script/build_container_rangenet.sh
 
 首次运行生成TensorRT模型运行需要一段时间
 
-<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ywkcwjdeu03nGHHW.png!thumbnail" alt="img" style="zoom:80%;" />
+<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image.png" alt="img" style="zoom:67%;" />
 
 ## 方法二：native PC
 
@@ -65,7 +65,7 @@ $ bash script/build_container_rangenet.sh
 - ros1
 - nvidia driver
 
-- TensorRT 8.0.03（tar包下载）, cuda_11.2.r11.2 cudnn 8.1.1（理论上使用其他版本的Trt也行，做好cuda等版本的适配即可）
+- TensorRT 8.2.3.0（tar包下载）, cuda_11.2.r11.2 cudnn 8.1.1（理论上使用其他版本的trt也行，做好cuda等版本的适配以及trt api的修改即可，e.g. [issue#1](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/1)）
 
 - apt package and python package
 
@@ -83,7 +83,7 @@ $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/RangeNetTrt8/src
 - 下载onnx模型
 
 ```bash
-$ wget -c http://www.ipb.uni-bonn.de/html/projects/bonnetal/lidar/semantic/predictions/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
+$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
 $ cd ~/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
 ```
 
