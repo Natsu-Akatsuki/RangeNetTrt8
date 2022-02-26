@@ -1,13 +1,18 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(rangenet_lib)
 
-# 设置编译项
+# ======================= COMPILE OPTION =======================
 set(CMAKE_BUILD_TYPE RELEASE)
-set(CMAKE_CXX_STANDARD 14)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STRICT_ANSI__")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "-Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
+# suppress eigen warning: "-Wcpp Please use cuda_runtime_api.h or cuda_runtime.h instead"
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
+
+# suppress the nvcc warning: "__device__ anotation is ignored on a function"
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
+# ======================= COMPILE OPTION =======================
+
 
 # 导入catkin库
 find_package(catkin REQUIRED
@@ -45,7 +50,7 @@ find_library(NVONNX_PARSER NAMES nvonnxparser)
 set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER})
 
 # CUDA
-find_package(CUDA)
+find_package(CUDA REQUIRED)
 find_library(CUBLAS_LIBRARIES cublas HINTS
   ${CUDA_TOOLKIT_ROOT_DIR}/lib64
   ${CUDA_TOOLKIT_ROOT_DIR}/lib
