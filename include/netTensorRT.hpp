@@ -5,18 +5,20 @@
  *
  */
 #pragma once
-// #include <torch/torch.h>
-// #include <c10/cuda/CUDAStream.h>
+
 #include "net.hpp"
 #include <NvInfer.h>
 #include <NvInferRuntime.h>
 #include <NvOnnxParser.h>
+#include <algorithm>
 #include <chrono>
 #include <cuda_runtime_api.h>
 #include <fstream>
 #include <iomanip>
 #include <ios>
 #include <numeric>
+#include <pcl/visualization/cloud_viewer.h>
+#include <postprocess.hpp>
 #include <project.hpp>
 using namespace nvinfer1;
 namespace rangenet {
@@ -30,7 +32,7 @@ public:
   // void log(Severity severity, const char *msg)
   void log(Severity severity, const char *msg) noexcept {
     // 设置日志等级
-    if (severity <= Severity::kWARNING) {
+    if (severity <= Severity::kINFO) {
       timePrefix();
       std::cout << severityPrefix(severity) << std::string(msg) << std::endl;
     }
@@ -111,6 +113,7 @@ public:
   cudaStream_t stream_;
   std::vector<void *> _hostBuffers;
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
+
 protected:
   ICudaEngine *_engine;
   IExecutionContext *_context;

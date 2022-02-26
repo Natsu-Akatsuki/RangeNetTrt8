@@ -3,25 +3,9 @@
 /**
  * @brief 初始化各种指针
  */
-ProjectGPU::ProjectGPU(cudaStream_t &stream) {
-  pointcloud_ = nullptr;
-  pxs_ = nullptr;
-  pys_ = nullptr;
-  valid_idx_ = nullptr;
+ProjectGPU::ProjectGPU(cudaStream_t &stream) { stream_ = stream; };
 
-  // GPU端
-  range_img_device_ = nullptr;
-
-  stream_ = stream;
-};
-
-ProjectGPU::~ProjectGPU() {
-  // 释放CPU的内存
-  CHECK_CUDA_ERROR(cudaFreeHost(pointcloud_));
-  CHECK_CUDA_ERROR(cudaFreeHost(pxs_));
-  CHECK_CUDA_ERROR(cudaFreeHost(pys_));
-  CHECK_CUDA_ERROR(cudaFreeHost(valid_idx_));
-};
+ProjectGPU::~ProjectGPU() = default;
 
 /**
  *
@@ -33,47 +17,53 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
   point_num_ = pointcloud_pcl.size();
   pointcloud_size_ = point_num_ * sizeof(float) * POINT_DIMS;
 
+  pointcloud_ =
+      cuda::make_unique<float[]>(point_num_ * POINT_DIMS, cuda::ToPin);
+  pxs_ = cuda::make_unique<float[]>(point_num_, cuda::ToPin);
+  pys_ = cuda::make_unique<float[]>(point_num_, cuda::ToPin);
+  valid_idx_ = cuda::make_unique<bool[]>(IMG_H * IMG_W, cuda::ToPin);
 
-  // CPU端
-  CHECK_CUDA_ERROR(cudaMallocHost((void **)&pointcloud_, pointcloud_size_));
-  CHECK_CUDA_ERROR(cudaMallocHost((void **)&pxs_, point_num_ * sizeof(float)));
-  CHECK_CUDA_ERROR(cudaMallocHost((void **)&pys_, point_num_ * sizeof(float)));
-  CHECK_CUDA_ERROR(cudaMallocHost((void **)&valid_idx_, IMG_H * IMG_W * sizeof(bool)));
-
+  auto pointcloud_raw_ptr = pointcloud_.get();
   for (int i = 0; i < point_num_; i++) {
-    pointcloud_[i * num_point_dims + 0] = pointcloud_pcl.points[i].x;
-    pointcloud_[i * num_point_dims + 1] = pointcloud_pcl.points[i].y;
-    pointcloud_[i * num_point_dims + 2] = pointcloud_pcl.points[i].z;
-    if (isNormalize){
-      pointcloud_[i * num_point_dims + 3] = pointcloud_pcl.points[i].intensity / 255;
-    }
-    else{
-      pointcloud_[i * num_point_dims + 3] = pointcloud_pcl.points[i].intensity;
+    pointcloud_raw_ptr[i * num_point_dims + 0] = pointcloud_pcl.points[i].x;
+    pointcloud_raw_ptr[i * num_point_dims + 1] = pointcloud_pcl.points[i].y;
+    pointcloud_raw_ptr[i * num_point_dims + 2] = pointcloud_pcl.points[i].z;
+    if (isNormalize) {
+      pointcloud_raw_ptr[i * num_point_dims + 3] =
+          pointcloud_pcl.points[i].intensity / 255;
+    } else {
+      pointcloud_raw_ptr[i * num_point_dims + 3] = pointcloud_pcl.points[i].intensity;
     }
   }
 
   // GPU端
-  pxs_device_ = cuda::make_unique<float[]>(point_num_);
-  pys_device_ = cuda::make_unique<float[]>(point_num_);
-  valid_idx_device_ = cuda::make_unique<bool[]>(IMG_H * IMG_W);
-  pointcloud_device_ = cuda::make_unique<float[]>(point_num_ * POINT_DIMS);
-  range_img_device_ = cuda::make_unique<float[]>(IMG_H * IMG_W * FEATURE_DIMS);
+  pxs_device_ = cuda::make_unique<float[]>(point_num_, cuda::ToDevice);
+  pys_device_ = cuda::make_unique<float[]>(point_num_, cuda::ToDevice);
+  valid_idx_device_ = cuda::make_unique<bool[]>(IMG_H * IMG_W, cuda::ToDevice);
+  pointcloud_device_ =
+      cuda::make_unique<float[]>(point_num_ * POINT_DIMS, cuda::ToDevice);
+  range_img_device_ =
+      cuda::make_unique<float[]>(IMG_H * IMG_W * FEATURE_DIMS, cuda::ToDevice);
 
   // CPU->GPU
-  CHECK_CUDA_ERROR(cudaMemcpy(pointcloud_device_.get(), pointcloud_, pointcloud_size_,
-                          cudaMemcpyHostToDevice));
+  CHECK_CUDA_ERROR(cudaMemcpy(pointcloud_device_.get(), pointcloud_.get(),
+                              pointcloud_size_, cudaMemcpyHostToDevice));
   // execute kernel function
-  project_host(pointcloud_, point_num_, pxs_device_.get(), pys_device_.get(),
-               valid_idx_device_.get(), range_img_device_.get(), stream_);
+  project_host(pointcloud_.get(), point_num_, pxs_device_.get(),
+               pys_device_.get(), valid_idx_device_.get(),
+               range_img_device_.get(), stream_);
   CHECK_CUDA_ERROR(cudaGetLastError());
 
   // GPU->CPU
-  CHECK_CUDA_ERROR(cudaMemcpy(pxs_, pxs_device_.get(), point_num_ * sizeof(float),
-                          cudaMemcpyDeviceToHost));
-  CHECK_CUDA_ERROR(cudaMemcpy(pys_, pys_device_.get(), point_num_ * sizeof(float),
-                          cudaMemcpyDeviceToHost));
-  CHECK_CUDA_ERROR(cudaMemcpy(valid_idx_, valid_idx_device_.get(),
-                          IMG_H * IMG_W * sizeof(bool), cudaMemcpyDeviceToHost));
+  CHECK_CUDA_ERROR(cudaMemcpy(pxs_.get(), pxs_device_.get(),
+                              point_num_ * sizeof(float),
+                              cudaMemcpyDeviceToHost));
+  CHECK_CUDA_ERROR(cudaMemcpy(pys_.get(), pys_device_.get(),
+                              point_num_ * sizeof(float),
+                              cudaMemcpyDeviceToHost));
+  CHECK_CUDA_ERROR(cudaMemcpy(valid_idx_.get(), valid_idx_device_.get(),
+                              IMG_H * IMG_W * sizeof(bool),
+                              cudaMemcpyDeviceToHost));
 }
 
 #if 0  /* some codeblock*/

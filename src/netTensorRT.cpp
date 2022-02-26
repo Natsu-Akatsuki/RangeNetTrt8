@@ -1,12 +1,4 @@
-#include <postprocess.hpp>
-#include "netTensorRT.hpp"
-
-#include <algorithm>
-#include <chrono>
-#include <cuda_runtime_api.h>
-#include <fstream>
-#include <iomanip>
-#include <pcl/visualization/cloud_viewer.h>
+#include <netTensorRT.hpp>
 
 namespace rangenet {
 namespace segmentation {
@@ -60,8 +52,8 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   // step1: generate input image
   ProjectGPU project_gpu(stream_);
   project_gpu.doProject(pointcloud_pcl, false);
-  auto range_img_device = project_gpu.range_img_device_.get();
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
+  auto range_img_device = project_gpu.range_img_device_.get();
   _deviceBuffers[0] = range_img_device;
 #if 0 /*opencv 可视化深度图*/
   float *range_img_cv;
@@ -87,12 +79,11 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
 
   float label_image[IMG_H * IMG_W];
-  int count = 0;
+
   for (int pixel_id = 0; pixel_id < IMG_H * IMG_W; pixel_id++) {
     if (project_gpu.valid_idx_[pixel_id]) {
       label_image[pixel_id] = ((int *)_hostBuffers[1])[pixel_id];
     } else {
-      count++;
       label_image[pixel_id] = 0;
     }
   }
@@ -104,11 +95,11 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   CHECK_CUDA_ERROR(cudaMemcpy(_hostBuffers[0], _deviceBuffers[0], totoalSize,
                               cudaMemcpyDeviceToHost));
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
-  auto ptr = (float *)_hostBuffers[0]; // todo
 
   // step3: postprocess
   bool isPostprocess = true;
   if (isPostprocess) {
+    auto ptr = (float *)_hostBuffers[0];
     // CHW
     float range_img[IMG_H * IMG_W];
     for (int pixel_x = 0; pixel_x < IMG_W; pixel_x++) {
@@ -128,8 +119,8 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 
     Postprocess postprocess(5, 1.0);
     postprocess.postprocessKNN(range_img, pointcloud_range.get(), label_image,
-                               project_gpu.pxs_, project_gpu.pys_, num_points,
-                               labels);
+                               project_gpu.pxs_.get(), project_gpu.pys_.get(),
+                               num_points, labels);
   } else {
     for (int i = 0; i < num_points; i++) {
       int pixel_x = project_gpu.pxs_[i];
@@ -139,7 +130,7 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     }
   }
 
-#if 0 // 可视化点云
+#if 1 // 可视化点云
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
   paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
   std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
@@ -255,7 +246,6 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
   network->markOutput(*ktop_layer->getOutput(1));
 
   // 防止该层转换为16位时数据溢出 (单个 ×237, x236)
-  int layer_idx = 236;
   int start = 236;
   int end = 238; // 238
   for (int i = start; i < end; i++) {
@@ -315,15 +305,13 @@ void NetTensorRT::prepareBuffer() {
     uint64_t totalSize = getBufferSize(dims, dtype);
     CHECK_CUDA_ERROR(cudaMalloc(&_deviceBuffers[i], totalSize));
     CHECK_CUDA_ERROR(cudaMallocHost(&_hostBuffers[i], totalSize));
-#define DEBUG
-#ifdef DEBUG
+
     std::string info = "I/O dimensions respectively are: [ ";
     for (int d = 0; d < dims.nbDims; d++) {
       info += std::to_string(dims.d[d]) + " ";
     }
     info = info + "]";
     _gLogger.log(nvinfer1::ILogger::Severity::kINFO, info.c_str());
-#endif
   }
 }
 

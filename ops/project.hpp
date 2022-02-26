@@ -28,26 +28,29 @@ public:
   ~ProjectGPU();
   void doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
                  bool isNormalize);
-  float *pxs_ = nullptr;
-  float *pys_ = nullptr;
-  bool *valid_idx_;
 
+  // CPU
+  cuda::unique_ptr<float[]> pointcloud_ = nullptr;
+  cuda::unique_ptr<float[]> pxs_ = nullptr;
+  cuda::unique_ptr<float[]> pys_ = nullptr;
+  cuda::unique_ptr<bool[]> valid_idx_ = nullptr;
+
+  // GPU
+  cuda::unique_ptr<bool[]> valid_idx_device_ = nullptr;
   cuda::unique_ptr<float[]> range_img_device_ = nullptr;
-  float *pointcloud_;
 
 private:
   cudaStream_t stream_;
   int point_num_;
   int pointcloud_size_;
 
-  // CPU端
-  float *range_img_ = nullptr; // 分配到锁页内存后默认初始化为0
+  // CPU
+  cuda::unique_ptr<float[]> range_img_ = nullptr;
 
-  // GPU端
+  // GPU
   cuda::unique_ptr<float[]> pointcloud_device_ = nullptr;
   cuda::unique_ptr<float[]> pxs_device_ = nullptr;
   cuda::unique_ptr<float[]> pys_device_ = nullptr;
-  cuda::unique_ptr<bool[]> valid_idx_device_ = nullptr;
 };
 
 void createColorImg(float *range_img, int channel);
