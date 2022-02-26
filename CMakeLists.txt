@@ -1,151 +1,115 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(rangenet_lib)
 
-# handle debug vs release mode
-#if (NOT CMAKE_BUILD_TYPE)
-#  set(CMAKE_BUILD_TYPE Release)
-#endif ()
-
+# 设置编译项
+set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_CXX_STANDARD 14)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORCE_INLINES")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STRICT_ANSI__")
 
-find_package(PCL REQUIRED QUIET COMPONENTS io)
-include_directories(${PCL_INCLUDE_DIRS})
+# 导入catkin库
+find_package(catkin REQUIRED
+  COMPONENTS geometry_msgs
+  sensor_msgs
+  roscpp
+  rospy
+  std_msgs
+  pcl_ros
+  tf)
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED)
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
 
-# libyaml-cpp (required)
-find_package(yaml-cpp)
-if (yaml-cpp_FOUND)
-  message("YAML Libs: ${YAML_CPP_LIBRARIES}")
-  message("YAML Headers: ${YAML_CPP_INCLUDE_DIR}")
-else ()
-  message(FATAL_ERROR "yaml-cpp NOT FOUND\n")
-endif (yaml-cpp_FOUND)
 
-# get boost (required)
-find_package(Boost COMPONENTS program_options filesystem)
-if (Boost_FOUND)
-  message("Boost Libs: ${Boost_LIBRARIES}")
-  message("Boost Headers: ${Boost_INCLUDE_DIRS}\n")
-else ()
-  message(FATAL_ERROR "Boost NOT FOUND\n")
-endif ()
-
-# cuda
-find_package(CUDA)
-#find_library(CUBLAS_LIBRARIES cublas HINTS
-#  ${CUDA_TOOLKIT_ROOT_DIR}/lib64
-#  ${CUDA_TOOLKIT_ROOT_DIR}/lib
-#  )
-include_directories(${CUDA_INCLUDE_DIRS})
-message("CUDA Libs: ${CUDA_LIBRARIES}")
-message("CUDA Headers: ${CUDA_INCLUDE_DIRS}")
+# 导入第三方库
+set(Torch_DIR "$ENV{HOME}/application/libtorch/share/cmake/Torch")
+find_package(Torch REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(PCL REQUIRED QUIET)
+find_package(yaml-cpp REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${TORCH_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIR})
 
 # TensorRT
+include_directories($ENV{HOME}/application/TensorRT-8.2.3.0/include)
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "$ENV{HOME}/application/TensorRT-8.2.3.0/lib")
 find_library(NVINFER NAMES nvinfer)
 find_library(NVPARSERS NAMES nvparsers)
 find_library(NVINFER_PLUGIN NAMES nvinfer_plugin)
 find_library(NVONNX_PARSER NAMES nvonnxparser)
 set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER})
-set(TENSORRT_FOUND ON)
-message("TensorRT is available!")
 
-# CUDNN
-# try to find the CUDNN module
-find_library(CUDNN_LIBRARY
-  NAMES libcudnn.so${__cudnn_ver_suffix} libcudnn${__cudnn_ver_suffix}.dylib ${__cudnn_lib_win_name}
-  PATHS $ENV{LD_LIBRARY_PATH} ${__libpath_cudart} ${CUDNN_ROOT_DIR} ${PC_CUDNN_LIBRARY_DIRS} ${CMAKE_INSTALL_PREFIX}
-  PATH_SUFFIXES lib lib64 bin
-  DOC "CUDNN library.")
-message("CUDNN_LIBRARY: ${CUDNN_LIBRARY}")
+# CUDA
+find_package(CUDA)
+find_library(CUBLAS_LIBRARIES cublas HINTS
+  ${CUDA_TOOLKIT_ROOT_DIR}/lib64
+  ${CUDA_TOOLKIT_ROOT_DIR}/lib
+  )
+include_directories(${CUDA_INCLUDE_DIRS})
 
-###################################
-## catkin specific configuration ##
-###################################
+
+include_directories(
+  example
+  include
+  utils)
+
 catkin_package(
+  CATKIN_DEPENDS
+  geometry_msgs
+  nav_msgs
+  roscpp
+  rospy
+  std_msgs
   INCLUDE_DIRS
   include
   LIBRARIES
-  rangenet_external
   rangenet_lib
   CATKIN_DEPENDS
   DEPENDS
   YAML_CPP
-  CFG_EXTRAS
 )
 
+add_library(pointcloud_io utils/pointcloud_io.cpp)
+target_link_libraries(pointcloud_io ${PCL_LIBRARIES})
 
-###########################
-## Install header config ##
-###########################
-include_directories(
-  example
-  include
-  ${rangenet_external_INCLUDE_DIRS}
-  ${catkin_INCLUDE_DIRS}
-  ${YAML_CPP_INCLUDE_DIR}
-)
+# cuda算子
+include_directories(ops)
+cuda_add_library(project_ops ops/project_kernel.cu ops/project.cpp)
 
-# turn config file into flags (sets TENSORRT_FOUND and TORCH_FOUND)
-#configure_file(include/external.hpp.in ${PROJECT_SOURCE_DIR}/include/external.hpp @ONLY)
+# 后处理
+include_directories(utils)
+add_library(postprocess utils/postprocess.cpp)
+target_link_libraries(postprocess ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 
-
-# make wrapper lib
-add_library(rangenet_external src/external.cpp)
-
-## Declare a cpp library
-# define the network library (compiling tf and trt conditionally)
-set(rangenet_lib_SOURCES src/net.cpp src/selector.cpp src/netTensorRT.cpp)
-
-# make the library and link stuff to it
-cuda_add_library(rangenet_lib ${rangenet_lib_SOURCES})
+add_library(rangenet_lib src/net.cpp src/netTensorRT.cpp)
 
 target_link_libraries(rangenet_lib
-  rangenet_external
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${TENSORRT_LIBRARIES}
+  ${CUDA_LIBRARIES}
+  ${TORCH_LIBRARIES}
+  project_ops
+  ${PCL_LIBRARIES}
   )
-
-find_package(OpenCV COMPONENTS core viz)
-message("Building example...")
-message("OpenCV Libs: ${OpenCV_LIBS}")
-set(OpenCV_LIBRARIES ${OpenCV_LIBS})
-message("OpenCV Headers: ${OpenCV_INCLUDE_DIRS}")
-include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable(infer example/infer.cpp)
 
 target_link_libraries(infer
+  ${OpenCV_LIBS}
   rangenet_lib
-  ${TENSORRT_LIBRARIES}
-  ${CUDA_LIBRARIES}
-  ${CUBLAS_LIBRARIES}
-  ${CUDA_curand_LIBRARY}
-  ${CUDNN_LIBRARY}
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${YAML_CPP_LIBRARIES}
+  pointcloud_io
+  postprocess
   )
 
-
-add_library(infer_api example/infer_api.cpp)
-target_link_libraries(infer_api ${PCL_LIBRARIES} rangenet_lib
-  ${TENSORRT_LIBRARIES}
-  ${CUDA_LIBRARIES}
-  ${CUBLAS_LIBRARIES}
-  ${CUDA_curand_LIBRARY}
-  ${CUDNN_LIBRARY}
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
-  ${Boost_LIBRARIES}
-  ${YAML_CPP_LIBRARIES})
-
-
-
-
+add_executable(ros_examples example/ros_example.cpp)
+target_link_libraries(ros_examples ${catkin_LIBRARIES} ${OpenCV_LIBS}
+  rangenet_lib
+  pointcloud_io
+  postprocess)

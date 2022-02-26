@@ -167,6 +167,10 @@ RUN apt update \
     libnvparsers-dev \
     libnvinfer-plugin-dev
 
+# >>> 设置用户 >>>
+RUN useradd -m helios && yes helios | passwd helios
+USER helios
+
 # >>> 从当前目录导入文件 >>>
 # COPY tmp /home/sleipnir/application
 

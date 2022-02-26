@@ -1,0 +1,3 @@
+DATA_PATH: "/home/helios/docker_ws/rangenet/src/rangenet_lib/example/002979.pcd"
+MODEL_DIR: "/home/helios/docker_ws/rangenet/src/rangenet_lib/darknet53/"
+

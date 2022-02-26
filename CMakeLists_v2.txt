@@ -44,8 +44,8 @@ message("CUDA Libs: ${CUDA_LIBRARIES}")
 message("CUDA Headers: ${CUDA_INCLUDE_DIRS}")
 
 # TensorRT
-include_directories($ENV{HOME}/application/TensorRT-8.2.3.0/include)
-set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "$ENV{HOME}/application/TensorRT-8.2.3.0/lib")
+include_directories($ENV{HOME}/application/TensorRT-8.0.0.3/include)
+set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "$ENV{HOME}/application/TensorRT-8.0.0.3/lib")
 
 find_library(NVINFER NAMES nvinfer)
 find_library(NVPARSERS NAMES nvparsers)

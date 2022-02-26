@@ -173,3 +173,8 @@ local.properties
 *.iml
 out
 gen
+
+*.pcd
+*.bin
+*.onnx
+*.trt

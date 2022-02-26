@@ -1,91 +1,84 @@
-/* Copyright (c) 2019 Xieyuanli Chen, Andres Milioto, Cyrill Stachniss, University of Bonn.
+/* Copyright (c) 2019 Xieyuanli Chen, Andres Milioto, Cyrill Stachniss,
+ * University of Bonn.
  *
  *  This file is part of rangenet_lib, and covered by the provided LICENSE file.
  *
  */
 #pragma once
-
+// #include <torch/torch.h>
+// #include <c10/cuda/CUDAStream.h>
+#include "net.hpp"
 #include <NvInfer.h>
-#include <NvOnnxParser.h>
 #include <NvInferRuntime.h>
+#include <NvOnnxParser.h>
+#include <chrono>
 #include <cuda_runtime_api.h>
 #include <fstream>
+#include <iomanip>
 #include <ios>
-#include <chrono>
 #include <numeric>
-#include "net.hpp"
-
-using namespace nvinfer1;  // I'm taking a liberty because the code is
-                           // unreadable otherwise
-
-#define CUDA_CHECK(status)                                             \
-  {                                                                    \
-    if (status != cudaSuccess) {                                       \
-      printf("%s in %s at %d\n", cudaGetErrorString(status), __FILE__, \
-             __LINE__);                                                \
-      exit(-1);                                                        \
-    }                                                                  \
-  }
-
+#include <project.hpp>
+using namespace nvinfer1;
 namespace rangenet {
 namespace segmentation {
 
-// Logger for GIE info/warning/errors
-class Logger : public ILogger {
- public:
-  void set_verbosity(bool verbose) { _verbose = verbose; }
-  void log(Severity severity, const char* msg)  noexcept override {
-    if (_verbose) {
-      switch (severity) {
-        case Severity::kINTERNAL_ERROR:
-          std::cerr << "INTERNAL_ERROR: ";
-          break;
-        case Severity::kERROR:
-          std::cerr << "ERROR: ";
-          break;
-        case Severity::kWARNING:
-          std::cerr << "WARNING: ";
-          break;
-        case Severity::kINFO:
-          std::cerr << "INFO: ";
-          break;
-        default:
-          std::cerr << "UNKNOWN: ";
-          break;
-      }
-      std::cout << msg << std::endl;
+/**
+ * @brief: 实例化一个ILogger接口类来捕获TensorRT的日志信息
+ */
+class Logger : public nvinfer1::ILogger {
+public:
+  // void log(Severity severity, const char *msg)
+  void log(Severity severity, const char *msg) noexcept {
+    // 设置日志等级
+    if (severity <= Severity::kWARNING) {
+      timePrefix();
+      std::cout << severityPrefix(severity) << std::string(msg) << std::endl;
     }
   }
 
- private:
-  bool _verbose = false;
+private:
+  static const char *severityPrefix(Severity severity) {
+    switch (severity) {
+    case Severity::kINTERNAL_ERROR:
+      return "[F] ";
+    case Severity::kERROR:
+      return "[E] ";
+    case Severity::kWARNING:
+      return "[W] ";
+    case Severity::kINFO:
+      return "[I] ";
+    case Severity::kVERBOSE:
+      return "[V] ";
+    default:
+      // #include <cassert>
+      assert(0);
+      return "";
+    }
+  }
+  void timePrefix() {
+    std::time_t timestamp = std::time(nullptr);
+    tm *tm_local = std::localtime(&timestamp);
+    std::cout << "[";
+    std::cout << std::setw(2) << std::setfill('0') << 1 + tm_local->tm_mon
+              << "/";
+    std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_mday << "/";
+    std::cout << std::setw(4) << std::setfill('0') << 1900 + tm_local->tm_year
+              << "-";
+    std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_hour << ":";
+    std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_min << ":";
+    std::cout << std::setw(2) << std::setfill('0') << tm_local->tm_sec << "] ";
+  }
 };
 
 /**
  * @brief      Class for segmentation network inference with TensorRT.
  */
 class NetTensorRT : public Net {
- public:
-  /**
-   * @brief      Constructs the object.
-   *
-   * @param[in]  model_path  The model path for the inference model directory
-   *                         containing the "model.onnx" or "model.trt" file and the arch_cfg, data_cfg
-   */
-  NetTensorRT(const std::string& model_path);
+public:
+  NetTensorRT(const std::string &model_path);
 
-  /**
-   * @brief      Destroys the object.
-   */
   ~NetTensorRT();
 
-  /**
-   * @brief      argsort.
-   *
-   * @param[in]  std::vector<T>
-   *
-   * @return     argsorted idxes
-   */
   template <typename T>
   std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
@@ -95,114 +88,41 @@ class NetTensorRT : public Net {
 
     // sort indexes based on comparing values in v. >: decrease <: increase
     std::sort(idx.begin(), idx.end(),
-         [&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+              [&v](size_t i1, size_t i2) { return v[i1] > v[i2]; });
 
     return idx;
   }
 
-
   /**
-   * @brief      Project a pointcloud into a spherical projection image.projection.
-   *
-   * @param[in]  scan, LiDAR scans; num_points, the number of points in this scan.
-   *
-   * @return     Projected LiDAR scans, with size of (_img_h * _img_w, _img_d)
+   * @brief 获点云类别
+   * @param scan
+   * @return N
    */
-  std::vector<std::vector<float> > doProjection(const std::vector<float>& scan, const uint32_t& num_points);
-
- /**
-  * @brief      Infer logits from LiDAR scan
-  *
-  * @param[in]  scan, LiDAR scans; num_points, the number of points in this scan.
-  *
-  * @return     Semantic estimates with probabilities over all classes (_n_classes, _img_h, _img_w)
-  */
-  std::vector<std::vector<float> > infer(const std::vector<float>& scan, const uint32_t& num_points);
-
-  /**
-   * @brief      Set verbosity level for backend execution
-   *
-   * @param[in]  verbose  True is max verbosity, False is no verbosity.
-   *
-   * @return     Exit code.
-   */
-  void verbosity(const bool verbose);
-
-  /**
-   * @brief Get the Buffer Size object
-   *
-   * @param d dimension
-   * @param t data type
-   * @return int size of data
-   */
+  void infer(const pcl::PointCloud<PointType> &pointcloud_pcl, int labels[]);
   int getBufferSize(Dims d, DataType t);
-
-  /**
-   * @brief Deserialize an engine that comes from a previous run
-   *
-   * @param engine_path
-   */
-  void deserializeEngine(const std::string& engine_path);
-
-  /**
-   * @brief Serialize an engine that we generated in this run
-   *
-   * @param engine_path
-   */
-  void serializeEngine(const std::string &onnx_path, const std::string& engine_path);
-
-  /**
-   * @brief Prepare io buffers for inference with engine
-   */
+  void deserializeEngine(const std::string &engine_path);
+  void serializeEngine(const std::string &onnx_path,
+                       const std::string &engine_path);
+  void paintPointCloud(const pcl::PointCloud<PointType> &pointcloud,
+                       pcl::PointCloud<pcl::PointXYZRGB> &color_pointcloud,
+                       int labels[]);
   void prepareBuffer();
+  std::vector<void *> _deviceBuffers;
+  cudaStream_t stream_;
+  std::vector<void *> _hostBuffers;
+  pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
+protected:
+  ICudaEngine *_engine;
+  IExecutionContext *_context;
+  Logger _gLogger;
 
-
- protected:
-  ICudaEngine* _engine;  // tensorrt engine (smart pointer doesn't work, must
-                         // destroy myself)
-  IExecutionContext* _context; // execution context (must destroy in destructor too)
-  Logger _gLogger;  // trt logger
-  std::vector<void*> _deviceBuffers;  // device mem
-  cudaStream_t _cudaStream;           // cuda stream for async ops
-  std::vector<void*> _hostBuffers;
-  uint _inBindIdx;
-  uint _outBindIdx;
-
-  std::vector<float> proj_xs; // stope a copy in original order
+  std::vector<float> proj_xs; // store a copy in original order
   std::vector<float> proj_ys;
 
   // explicitly set the invalid point for both inputs and outputs
-  std::vector<float> invalid_input =  {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-  std::vector<float> invalid_output = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                       0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                       0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                       0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-  // timer stuff
-  std::vector<std::chrono::system_clock::time_point> stimes;
-
-  void tic()
-  {
-    stimes.push_back(std::chrono::high_resolution_clock::now());
-  }
-
-  /**
-   * @brief stops the last timer started and outputs \a msg, if given.
-   * @return elapsed time in seconds.
-   **/
-  double toc()
-  {
-    assert(stimes.begin() != stimes.end());
-
-    std::chrono::system_clock::time_point endtime = std::chrono::high_resolution_clock::now();
-    std::chrono::system_clock::time_point starttime = stimes.back();
-    stimes.pop_back();
-
-    std::chrono::duration<double> elapsed_seconds = endtime - starttime;
-
-    return elapsed_seconds.count();
-  }
+  std::vector<float> invalid_input = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+  std::vector<float> invalid_output = {1.0f};
 };
 
-}  // namespace segmentation
-}  // namespace rangenet
+} // namespace segmentation
+} // namespace rangenet

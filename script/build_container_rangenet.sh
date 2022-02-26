@@ -2,12 +2,12 @@
 
 # for debug
 # set -x 
-if [ ! -d ${HOME}/tmp} ]
+if [ ! -d ${HOME}/tmp ]
 then
     mkdir ${HOME}/tmp
 fi
 
-if [ ! -d ${HOME}/docker_ws} ]
+if [ ! -d ${HOME}/docker_ws ]
 then
     mkdir ${HOME}/docker_ws
 fi
@@ -17,7 +17,7 @@ touch $XAUTH
 xauth nlist $DISPLAY | sed -e 's/^..../ffff/' | sudo xauth -f $XAUTH nmerge -
 
 # 参数配置
-set_container_name="--name=rangenet1.0"
+set_container_name="--name=rangenet1.1"
 image_name="registry.cn-hangzhou.aliyuncs.com/gdut-iidcc/rangenet:1.0"
 
 # 文件挂载

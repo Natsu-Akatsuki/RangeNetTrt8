@@ -19,9 +19,7 @@ namespace segmentation {
  * @param[in]  model_path  The model path for the inference model directory
  */
 Net::Net(const std::string& model_path)
-    : _model_path(model_path), _verbose(false) {
-  // set default verbosity level
-  verbosity(_verbose);
+    : _model_path(model_path) {
 
   // Try to get the config file as well
   std::string arch_cfg_path = _model_path + "/arch_cfg.yaml";
@@ -89,9 +87,9 @@ Net::Net(const std::string& model_path)
   }
 
   // get image size
-  _img_h = arch_cfg["dataset"]["sensor"]["img_prop"]["height"].as<int>();
-  _img_w = arch_cfg["dataset"]["sensor"]["img_prop"]["width"].as<int>();
-  _img_d = 5; // range, x, y, z, remission
+  // _img_h = arch_cfg["dataset"]["sensor"]["img_prop"]["height"].as<int>();
+  // _img_w = arch_cfg["dataset"]["sensor"]["img_prop"]["width"].as<int>();
+  // _img_d = 5; // range, x, y, z, remission
 
   // get normalization parameters
   YAML::Node img_means, img_stds;
@@ -120,47 +118,22 @@ Net::Net(const std::string& model_path)
 }
 
 /**
- * @brief      Get raw point clouds
- *
- * @param[in]  scan, LiDAR scans; num_points, the number of points in this scan.
- *
- * @return     cv format points
- */
-std::vector<cv::Vec3f> Net::getPoints(const std::vector<float>& scan, const uint32_t &num_points) {
-  std::vector<cv::Vec3f> points;
-  points.resize(num_points);
-
-  for (uint32_t i = 0; i < num_points; ++i) {
-    points[i] = cv::Vec3f(scan[4 * i], scan[4 * i + 1], scan[4 * i +2]);
-  }
-  return points;
-}
-
-/**
  * @brief      Convert mask to color using dictionary as lut
  *
  * @param[in]  semantic_scan, The mask from argmax; num_points, the number of points in this scan.
  *
  * @return     the colored segmentation mask :)
  */
-std::vector<cv::Vec3b> Net::getLabels(const std::vector<std::vector<float>>& semantic_scan, const uint32_t &num_points) {
+std::vector<cv::Vec3b> Net::getLabels(const std::vector<uint32_t>& semantic_scan) {
+  uint32_t num_points = semantic_scan.size();
   std::vector<cv::Vec3b> labels;
-  std::vector<float> labels_prob;
-  labels.resize(num_points);
-  labels_prob.resize(num_points);
 
+  labels.resize(num_points);
   for (uint32_t i = 0; i < num_points; ++i) {
-    labels_prob[i] = 0;
-    for (int32_t j = 0; j < _n_classes; ++j)
-    {
-      if (labels_prob[i] <= semantic_scan[i][j])
-      {
-        labels[i] = cv::Vec3b(std::get<0>(_argmax_to_rgb[j]),
-                              std::get<1>(_argmax_to_rgb[j]),
-                              std::get<2>(_argmax_to_rgb[j]));
-        labels_prob[i] = semantic_scan[i][j];
-      }
-    }
+    uint32_t label = semantic_scan[i];
+    labels[i] = cv::Vec3b(std::get<0>(_argmax_to_rgb[label]),
+                          std::get<1>(_argmax_to_rgb[label]),
+                          std::get<2>(_argmax_to_rgb[label]));
   }
   return labels;
 }
