@@ -115,8 +115,9 @@ public:
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
 
 protected:
-  ICudaEngine *_engine;
-  IExecutionContext *_context;
+  std::unique_ptr<ICudaEngine> _engine = nullptr;
+  std::unique_ptr<IExecutionContext> _context = nullptr;
+
   Logger _gLogger;
 
   std::vector<float> proj_xs; // store a copy in original order

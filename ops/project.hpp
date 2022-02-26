@@ -30,14 +30,14 @@ public:
                  bool isNormalize);
 
   // CPU
-  cuda::unique_ptr<float[]> pointcloud_ = nullptr;
-  cuda::unique_ptr<float[]> pxs_ = nullptr;
-  cuda::unique_ptr<float[]> pys_ = nullptr;
-  cuda::unique_ptr<bool[]> valid_idx_ = nullptr;
+  cuda::unique_pin_ptr<float[]> pointcloud_ = nullptr;
+  cuda::unique_pin_ptr<float[]> pxs_ = nullptr;
+  cuda::unique_pin_ptr<float[]> pys_ = nullptr;
+  cuda::unique_pin_ptr<bool[]> valid_idx_ = nullptr;
 
   // GPU
-  cuda::unique_ptr<bool[]> valid_idx_device_ = nullptr;
-  cuda::unique_ptr<float[]> range_img_device_ = nullptr;
+  cuda::unique_gpu_ptr<bool[]> valid_idx_device_ = nullptr;
+  cuda::unique_gpu_ptr<float[]> range_img_device_ = nullptr;
 
 private:
   cudaStream_t stream_;
@@ -45,12 +45,12 @@ private:
   int pointcloud_size_;
 
   // CPU
-  cuda::unique_ptr<float[]> range_img_ = nullptr;
+  cuda::unique_pin_ptr<float[]> range_img_ = nullptr;
 
   // GPU
-  cuda::unique_ptr<float[]> pointcloud_device_ = nullptr;
-  cuda::unique_ptr<float[]> pxs_device_ = nullptr;
-  cuda::unique_ptr<float[]> pys_device_ = nullptr;
+  cuda::unique_gpu_ptr<float[]> pointcloud_device_ = nullptr;
+  cuda::unique_gpu_ptr<float[]> pxs_device_ = nullptr;
+  cuda::unique_gpu_ptr<float[]> pys_device_ = nullptr;
 };
 
 void createColorImg(float *range_img, int channel);

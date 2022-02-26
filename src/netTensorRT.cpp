@@ -4,7 +4,7 @@ namespace rangenet {
 namespace segmentation {
 
 NetTensorRT::NetTensorRT(const std::string &model_path)
-    : Net(model_path), _engine(0), _context(0) {
+    : Net(model_path) {
 
   std::string onnx_path = model_path + "model.onnx";
   std::string engine_path = model_path + "model.trt";
@@ -27,10 +27,7 @@ NetTensorRT::NetTensorRT(const std::string &model_path)
 NetTensorRT::~NetTensorRT() {
 
   // free cuda buffers
-  int n_bindings = _engine->getNbBindings();
-  for (int i = 0; i < n_bindings; i++) {
-    CHECK_CUDA_ERROR(cudaFree(_deviceBuffers[i]));
-  }
+  CHECK_CUDA_ERROR(cudaFree(_deviceBuffers[1]));
   std::cout << "cuda buffers released." << std::endl;
   // free cuda pinned mem
   for (auto &buffer : _hostBuffers)
@@ -130,7 +127,8 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     }
   }
 
-#if 1 // 可视化点云
+#if 0
+  // 可视化点云
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
   paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
   std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
@@ -198,8 +196,13 @@ void NetTensorRT::deserializeEngine(const std::string &engine_path) {
   file.read(data.get(), length);
   file.close();
 
-  auto runtime = createInferRuntime(_gLogger);
-  _engine = runtime->deserializeCudaEngine(data.get(), length, nullptr);
+  auto runtime = std::unique_ptr<IRuntime>(createInferRuntime(_gLogger));
+  _engine = std::unique_ptr<ICudaEngine>(
+      runtime->deserializeCudaEngine(data.get(), length, nullptr));
+  if (!_engine) {
+    throw std::runtime_error(
+        "Invalid engine. Please remember to create engine first.");
+  }
   std::cout << "Successfully deserialized Engine from trt file" << std::endl;
 }
 
@@ -265,14 +268,8 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
 }
 
 void NetTensorRT::prepareBuffer() {
-  // check if engine is ok
-  if (!_engine) {
-    throw std::runtime_error(
-        "Invalid engine. Please remember to create engine first.");
-  }
-
-  // get execution context from engine
-  _context = _engine->createExecutionContext();
+  _context =
+      std::unique_ptr<IExecutionContext>(_engine.get()->createExecutionContext());
   if (!_context) {
     throw std::runtime_error("Invalid execution context. Can't infer.");
   }

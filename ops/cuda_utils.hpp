@@ -14,62 +14,52 @@ static void CheckCudaError(cudaError_t err, const char *file, int line) {
 #define CHECK_CUDA_ERROR(err) (CheckCudaError(err, __FILE__, __LINE__))
 
 namespace cuda {
-
-constexpr u_int8_t ToDevice = 0;
-constexpr u_int8_t ToPin = 1; // to pinned memory
-
 /**
  * @brief 自定义内存回收逻辑
  */
-struct deleter {
+struct deleter_gpu {
   void operator()(void *p) const { CHECK_CUDA_ERROR(::cudaFree(p)); }
 };
 
-template <typename T> using unique_ptr = std::unique_ptr<T, deleter>;
+struct deleter_pin {
+  void operator()(void *p) const { CHECK_CUDA_ERROR(::cudaFreeHost(p)); }
+};
 
-// 数组类型
+template <typename T> using unique_gpu_ptr = std::unique_ptr<T, deleter_gpu>;
+template <typename T> using unique_pin_ptr = std::unique_ptr<T, deleter_pin>;
+
+// array type for gpu
 template <typename T>
-typename std::enable_if<std::is_array<T>::value, cuda::unique_ptr<T>>::type
-make_unique(const std::size_t n, u_int8_t flag = 0) {
+typename std::enable_if<std::is_array<T>::value, cuda::unique_gpu_ptr<T>>::type
+make_gpu_unique(const std::size_t n) {
   // e.g typename std::remove_extent<float[]>::type -> float;
   // 取得数组中元素的类型
   using U = typename std::remove_extent<T>::type;
   U *p;
-  switch (flag) {
-  case ToDevice: {
-    CHECK_CUDA_ERROR(
-        ::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(U) * n));
-    break;
-  }
-  case ToPin: {
-    CHECK_CUDA_ERROR(
-        ::cudaMallocHost(reinterpret_cast<void **>(&p), sizeof(U) * n));
-    break;
-  }
-  default:
-    throw std::runtime_error("make_unique Invalid Flag: Must be 0 or 1");
-  }
-  return cuda::unique_ptr<T>{p};
+  CHECK_CUDA_ERROR(::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  return cuda::unique_gpu_ptr<T>{p};
 }
 
+// array type for pinned memory
+template <typename T>
+typename std::enable_if<std::is_array<T>::value, cuda::unique_pin_ptr<T>>::type
+make_pin_unique(const std::size_t n) {
+  // e.g typename std::remove_extent<float[]>::type -> float;
+  // 取得数组中元素的类型
+  using U = typename std::remove_extent<T>::type;
+  U *p;
+  CHECK_CUDA_ERROR(::cudaMallocHost(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  return cuda::unique_pin_ptr<T>{p};
+}
+
+#if 0 /*code block*/
 // 普通类型
-template <typename T> cuda::unique_ptr<T> make_unique(u_int8_t flag = 0) {
+template <typename T> cuda::unique_ptr<T> make_unique() {
   T *p;
-  switch (flag) {
-  case ToDevice: {
-    CHECK_CUDA_ERROR(::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(T)));
-    break;
-  }
-  case ToPin: {
-    CHECK_CUDA_ERROR(
-        ::cudaMallocHost(reinterpret_cast<void **>(&p), sizeof(T)));
-    break;
-  }
-  default:
-    throw std::runtime_error("make_unique Invalid Flag: Must be 0 or 1");
-  }
+  CHECK_CUDA_ERROR(::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(T)));
   return cuda::unique_ptr<T>{p};
 }
+#endif
 
 } // namespace cuda
 #endif // CUDA_UTILS_HPP

@@ -17,11 +17,10 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
   point_num_ = pointcloud_pcl.size();
   pointcloud_size_ = point_num_ * sizeof(float) * POINT_DIMS;
 
-  pointcloud_ =
-      cuda::make_unique<float[]>(point_num_ * POINT_DIMS, cuda::ToPin);
-  pxs_ = cuda::make_unique<float[]>(point_num_, cuda::ToPin);
-  pys_ = cuda::make_unique<float[]>(point_num_, cuda::ToPin);
-  valid_idx_ = cuda::make_unique<bool[]>(IMG_H * IMG_W, cuda::ToPin);
+  pointcloud_ = cuda::make_pin_unique<float[]>(point_num_ * POINT_DIMS);
+  pxs_ = cuda::make_pin_unique<float[]>(point_num_);
+  pys_ = cuda::make_pin_unique<float[]>(point_num_);
+  valid_idx_ = cuda::make_pin_unique<bool[]>(IMG_H * IMG_W);
 
   auto pointcloud_raw_ptr = pointcloud_.get();
   for (int i = 0; i < point_num_; i++) {
@@ -32,18 +31,18 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
       pointcloud_raw_ptr[i * num_point_dims + 3] =
           pointcloud_pcl.points[i].intensity / 255;
     } else {
-      pointcloud_raw_ptr[i * num_point_dims + 3] = pointcloud_pcl.points[i].intensity;
+      pointcloud_raw_ptr[i * num_point_dims + 3] =
+          pointcloud_pcl.points[i].intensity;
     }
   }
 
   // GPU端
-  pxs_device_ = cuda::make_unique<float[]>(point_num_, cuda::ToDevice);
-  pys_device_ = cuda::make_unique<float[]>(point_num_, cuda::ToDevice);
-  valid_idx_device_ = cuda::make_unique<bool[]>(IMG_H * IMG_W, cuda::ToDevice);
-  pointcloud_device_ =
-      cuda::make_unique<float[]>(point_num_ * POINT_DIMS, cuda::ToDevice);
+  pxs_device_ = cuda::make_gpu_unique<float[]>(point_num_);
+  pys_device_ = cuda::make_gpu_unique<float[]>(point_num_);
+  valid_idx_device_ = cuda::make_gpu_unique<bool[]>(IMG_H * IMG_W);
+  pointcloud_device_ = cuda::make_gpu_unique<float[]>(point_num_ * POINT_DIMS);
   range_img_device_ =
-      cuda::make_unique<float[]>(IMG_H * IMG_W * FEATURE_DIMS, cuda::ToDevice);
+      cuda::make_gpu_unique<float[]>(IMG_H * IMG_W * FEATURE_DIMS);
 
   // CPU->GPU
   CHECK_CUDA_ERROR(cudaMemcpy(pointcloud_device_.get(), pointcloud_.get(),
