@@ -34,7 +34,7 @@ int main(int argc, const char *argv[]) {
   auto net = std::unique_ptr<cl::Net>(new cl::NetTensorRT(model_dir));
 
   // step5: infer
-  int *labels = new int[pointcloud->size()];
-  net->infer(*pointcloud, labels);
+  auto labels = std::make_unique<int[]>(pointcloud->size());
+  net->infer(*pointcloud, labels.get());
   return 0;
 }

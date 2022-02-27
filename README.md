@@ -23,30 +23,33 @@
 - 使用**cuda**编程对数据进行预处理
 - 使用**libtorch**对数据进行knn后处理([参考代码here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py))
 
+<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220227223539620.png" alt="image-20220227223539620" style="zoom:80%;" />
+
+
+
 ## 文件树
 
 ├── **build**    
 ├── **devel**   
 ├── **logs**   
 └── **src**   
-   └── **RangeNetTrt8**  
-     ├── **CMakeLists.txt**   
-     ├── **CMakeLists_v2.txt**   
-     ├── **darknet53**   
-     ├── **docker**   
-     ├── **example**   
-     ├── **include**   
-     ├── **launch**   
-     ├── **LICENSE**   
-     ├── **log**   
-     ├── **ops**   
-     ├── **package.xml**   
-     ├── **pics**   
-     ├── **README.md**   
-     ├── **rosbag**   
-     ├── **script**   
-     ├── **src**   
-     └── **utils**  
+　└── **RangeNetTrt8**  
+　　├── **CMakeLists.txt**   
+　　├── **CMakeLists_v2.txt**   
+　　├── **darknet53**   
+　　├── **docker**   
+　　├── **example**   
+　　├── **include**   
+　　├── **launch**   
+　　├── **LICENSE**   
+　　├── **ops**   
+　　├── **package.xml**   
+　　├── **pics**   
+　　├── **README.md**   
+　　├── **rosbag**   
+　　├── **script**   
+　　├── **src**   
+　　└── **utils**  
 
 ## 方法一：docker（改进ing）
 
@@ -120,14 +123,14 @@ $ pip install catkin_tools trollius numpy
 $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/RangeNetTrt8/src
 ```
 
-- 下载onnx模型
+- 下载**onnx**模型
 
 ```bash
 $ wget -c http://www.ipb.uni-bonn.de/html/projects/bonnetal/lidar/semantic/predictions/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
 $ cd ~/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
 ```
 
-- 下载libtorch
+- 下载**libtorch**
 
 ```bash
 $ wget -c https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.10.2%2Bcu113.zip -O libtorch.zip
@@ -149,7 +152,7 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:
 
 ### 安装
 
-- 修改CMakeLists：将CMakeLists_v2.txt替换为CMakeLists.txt，修改其中的TensorRT, libtorch等依赖库的路径
+- 修改CMakeLists：修改其中的TensorRT, libtorch等依赖库的路径
 - 编译和执行
 
 ```bash

@@ -21,6 +21,8 @@ NetTensorRT::NetTensorRT(const std::string &model_path)
 
   deserializeEngine(engine_path);
   prepareBuffer();
+  CHECK_CUDA_ERROR(cudaEventCreate(&start_));
+  CHECK_CUDA_ERROR(cudaEventCreate(&stop_));
   CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
 }
 
@@ -33,11 +35,13 @@ NetTensorRT::~NetTensorRT() {
   for (auto &buffer : _hostBuffers)
     CHECK_CUDA_ERROR(cudaFreeHost(buffer));
   std::cout << "cuda pinned mem released." << std::endl;
-  // destroy cuda stream
-  CHECK_CUDA_ERROR(cudaStreamDestroy(stream_));
-  std::cout << "cuda stream destroyed." << std::endl;
-}
 
+
+  CHECK_CUDA_ERROR(cudaStreamDestroy(stream_));
+  CHECK_CUDA_ERROR(cudaEventDestroy(start_));
+  CHECK_CUDA_ERROR(cudaEventDestroy(stop_));
+}
+#define PERFORMANCE_LOG 1
 void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
                         int labels[]) {
   uint32_t num_points = pointcloud_pcl.size();
@@ -46,13 +50,26 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     throw std::runtime_error("Invaild engine on inference.");
   }
 
+#if PERFORMANCE_LOG
+  float preprocess_time = 0.0f;
+  CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
+#endif
+
   // step1: generate input image
   ProjectGPU project_gpu(stream_);
   project_gpu.doProject(pointcloud_pcl, false);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
   auto range_img_device = project_gpu.range_img_device_.get();
   _deviceBuffers[0] = range_img_device;
-#if 0 /*opencv 可视化深度图*/
+
+#if PERFORMANCE_LOG
+  CHECK_CUDA_ERROR(cudaEventRecord(stop_, stream_));
+  CHECK_CUDA_ERROR(cudaEventSynchronize(stop_));
+  CHECK_CUDA_ERROR(cudaEventElapsedTime(&preprocess_time, start_, stop_));
+#endif
+
+#if 0
+  // opencv可视化深度图
   float *range_img_cv;
   cudaMallocHost((void **)&range_img_cv,
                  FEATURE_DIMS * IMG_H * IMG_W * sizeof(float));
@@ -67,7 +84,12 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 #endif
 
   // step2: execute infer
-  _context->enqueue(1, (void **)&_deviceBuffers[0], stream_, nullptr);
+#if PERFORMANCE_LOG
+  float infer_time = 0.0f;
+  CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
+#endif
+
+  _context->enqueue(1, (void **) &_deviceBuffers[0], stream_, nullptr);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
   int totoalSize = getBufferSize(_engine->getBindingDimensions(1),
                                  _engine->getBindingDataType(1));
@@ -79,7 +101,7 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 
   for (int pixel_id = 0; pixel_id < IMG_H * IMG_W; pixel_id++) {
     if (project_gpu.valid_idx_[pixel_id]) {
-      label_image[pixel_id] = ((int *)_hostBuffers[1])[pixel_id];
+      label_image[pixel_id] = ((int *) _hostBuffers[1])[pixel_id];
     } else {
       label_image[pixel_id] = 0;
     }
@@ -93,10 +115,21 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
                               cudaMemcpyDeviceToHost));
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
 
+#if PERFORMANCE_LOG
+  CHECK_CUDA_ERROR(cudaEventRecord(stop_, stream_));
+  CHECK_CUDA_ERROR(cudaEventSynchronize(stop_));
+  CHECK_CUDA_ERROR(cudaEventElapsedTime(&infer_time, start_, stop_));
+#endif
+
+#if PERFORMANCE_LOG
+  float postprocess_time = 0.0f;
+  CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
+#endif
+
   // step3: postprocess
   bool isPostprocess = true;
   if (isPostprocess) {
-    auto ptr = (float *)_hostBuffers[0];
+    auto ptr = (float *) _hostBuffers[0];
     // CHW
     float range_img[IMG_H * IMG_W];
     for (int pixel_x = 0; pixel_x < IMG_W; pixel_x++) {
@@ -127,7 +160,16 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     }
   }
 
-#if 0
+#if PERFORMANCE_LOG
+  CHECK_CUDA_ERROR(cudaEventRecord(stop_, stream_));
+  CHECK_CUDA_ERROR(cudaEventSynchronize(stop_));
+  CHECK_CUDA_ERROR(cudaEventElapsedTime(&postprocess_time, start_, stop_));
+  std::cout<<"TIME: preprocess_time: "<< preprocess_time  <<" ms." <<std::endl;
+  std::cout<<"TIME: infer_time: "<< infer_time <<" ms." <<std::endl;
+  std::cout<<"TIME: postprocess_time: "<< postprocess_time <<" ms." << std::endl;
+#endif
+
+#if 1
   // 可视化点云
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
   paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
@@ -163,16 +205,11 @@ int NetTensorRT::getBufferSize(Dims d, DataType t) {
     size *= d.d[i];
 
   switch (t) {
-  case DataType::kINT32:
-    return size * 4;
-  case DataType::kFLOAT:
-    return size * 4;
-  case DataType::kHALF:
-    return size * 2;
-  case DataType::kINT8:
-    return size * 1;
-  default:
-    throw std::runtime_error("Data type not handled");
+  case DataType::kINT32:return size * 4;
+  case DataType::kFLOAT:return size * 4;
+  case DataType::kHALF:return size * 2;
+  case DataType::kINT8:return size * 1;
+  default:throw std::runtime_error("Data type not handled");
   }
   return 0;
 }
@@ -277,7 +314,7 @@ void NetTensorRT::prepareBuffer() {
   int n_bindings = _engine->getNbBindings();
   if (n_bindings != 2) {
     throw std::runtime_error("Invalid number of bindings: " +
-                             std::to_string(n_bindings));
+        std::to_string(n_bindings));
   }
 
 #if 0

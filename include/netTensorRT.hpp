@@ -41,16 +41,11 @@ public:
 private:
   static const char *severityPrefix(Severity severity) {
     switch (severity) {
-    case Severity::kINTERNAL_ERROR:
-      return "[F] ";
-    case Severity::kERROR:
-      return "[E] ";
-    case Severity::kWARNING:
-      return "[W] ";
-    case Severity::kINFO:
-      return "[I] ";
-    case Severity::kVERBOSE:
-      return "[V] ";
+    case Severity::kINTERNAL_ERROR:return "[F] ";
+    case Severity::kERROR:return "[E] ";
+    case Severity::kWARNING:return "[W] ";
+    case Severity::kINFO:return "[I] ";
+    case Severity::kVERBOSE:return "[V] ";
     default:
       // #include <cassert>
       assert(0);
@@ -81,7 +76,7 @@ public:
 
   ~NetTensorRT();
 
-  template <typename T>
+  template<typename T>
   std::vector<size_t> sort_indexes(const std::vector<T> &v) {
 
     // initialize original index locations
@@ -110,10 +105,10 @@ public:
                        int labels[]);
   void prepareBuffer();
   std::vector<void *> _deviceBuffers;
-  cudaStream_t stream_;
   std::vector<void *> _hostBuffers;
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
-
+  cudaStream_t stream_ = 0;
+  cudaEvent_t start_, stop_;
 protected:
   std::unique_ptr<ICudaEngine> _engine = nullptr;
   std::unique_ptr<IExecutionContext> _context = nullptr;
