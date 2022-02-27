@@ -4,7 +4,7 @@
 #include "std_msgs/String.h"
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+
 #include <sstream>
 namespace cl = rangenet::segmentation;
 class SemanticSegment {
@@ -15,17 +15,19 @@ public:
 
 private:
   ros::NodeHandle nh_;
+  ros::NodeHandle pnh_;
   ros::Publisher pub_;
   ros::Subscriber sub_;
   std::unique_ptr<cl::Net> net_;
 };
 
-SemanticSegment::SemanticSegment() : nh_("") {
+SemanticSegment::SemanticSegment() : nh_(""), pnh_("~") {
+
+  std::string model_dir;
+  pnh_.param<std::string>("model_dir", model_dir, "");
   pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/label_pointcloud", 1);
   sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
       "/raw_pointcloud", 1, &SemanticSegment::pointcloudCallback, this);
-  std::string model_dir =
-      "/home/helios/docker_ws/rangenet/src/rangenet_lib/darknet53/";
   net_ = std::unique_ptr<cl::Net>(new cl::NetTensorRT(model_dir));
 };
 

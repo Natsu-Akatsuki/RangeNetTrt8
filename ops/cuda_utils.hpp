@@ -31,24 +31,34 @@ template <typename T> using unique_pin_ptr = std::unique_ptr<T, deleter_pin>;
 // array type for gpu
 template <typename T>
 typename std::enable_if<std::is_array<T>::value, cuda::unique_gpu_ptr<T>>::type
-make_gpu_unique(const std::size_t n) {
+make_gpu_unique(const std::size_t n, bool isMulTypeSize = true) {
   // e.g typename std::remove_extent<float[]>::type -> float;
   // 取得数组中元素的类型
   using U = typename std::remove_extent<T>::type;
   U *p;
-  CHECK_CUDA_ERROR(::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  if (isMulTypeSize) {
+    CHECK_CUDA_ERROR(
+        ::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  } else {
+    CHECK_CUDA_ERROR(::cudaMallocHost(reinterpret_cast<void **>(&p), n));
+  }
   return cuda::unique_gpu_ptr<T>{p};
 }
 
 // array type for pinned memory
 template <typename T>
 typename std::enable_if<std::is_array<T>::value, cuda::unique_pin_ptr<T>>::type
-make_pin_unique(const std::size_t n) {
+make_pin_unique(const std::size_t n, bool isMulTypeSize = true) {
   // e.g typename std::remove_extent<float[]>::type -> float;
   // 取得数组中元素的类型
   using U = typename std::remove_extent<T>::type;
   U *p;
-  CHECK_CUDA_ERROR(::cudaMallocHost(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  if (isMulTypeSize) {
+    CHECK_CUDA_ERROR(
+        ::cudaMallocHost(reinterpret_cast<void **>(&p), sizeof(U) * n));
+  } else {
+    CHECK_CUDA_ERROR(::cudaMallocHost(reinterpret_cast<void **>(&p), n));
+  }
   return cuda::unique_pin_ptr<T>{p};
 }
 

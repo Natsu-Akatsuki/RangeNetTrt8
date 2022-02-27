@@ -15,7 +15,7 @@
 - 提供**docker**环境
 - 移除**boost**库
 - 使用**智能指针**管理tensorrt对象和GPU显存的内存回收
-- 提供**ros** example
+- 提供**ros**例程
 
 更快的运行速度
 
@@ -23,7 +23,32 @@
 - 使用**cuda**编程对数据进行预处理
 - 使用**libtorch**对数据进行knn后处理([参考代码here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py))
 
-## 方法一：docker
+## 文件树
+
+├── **build**    
+├── **devel**   
+├── **logs**   
+└── **src**   
+   └── **RangeNetTrt8**  
+     ├── **CMakeLists.txt**   
+     ├── **CMakeLists_v2.txt**   
+     ├── **darknet53**   
+     ├── **docker**   
+     ├── **example**   
+     ├── **include**   
+     ├── **launch**   
+     ├── **LICENSE**   
+     ├── **log**   
+     ├── **ops**   
+     ├── **package.xml**   
+     ├── **pics**   
+     ├── **README.md**   
+     ├── **rosbag**   
+     ├── **script**   
+     ├── **src**   
+     └── **utils**  
+
+## 方法一：docker（改进ing）
 
 ### 依赖
 
@@ -71,7 +96,7 @@ $ bash script/build_container_rangenet.sh
 
 首次运行生成TensorRT模型运行需要一段时间
 
-<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ywkcwjdeu03nGHHW.png!thumbnail" alt="img" style="zoom:80%;" />
+<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image.png" alt="img" style="zoom:80%;" />
 
 ## 方法二：native PC
 
@@ -125,27 +150,19 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:
 ### 安装
 
 - 修改CMakeLists：将CMakeLists_v2.txt替换为CMakeLists.txt，修改其中的TensorRT, libtorch等依赖库的路径
-- 编译
+- 编译和执行
 
 ```bash
-$ cd ~/RanageNetTrt8/src
-$ bash script/build_container_rangenet.sh
 # 编译和执行
 $ cd ~/RanageNetTrt8
 $ catkin_build
+$ source devel/setup.bash
+$ roslaunch rangenet_plusplus rangenet.launch
+# 播放包（该模型仅适用于kitti数据集，需自行下载包文件和修改该launch文档）
+$ roslaunch rangenet_plusplus rosbag.launch
 ```
 
-- 执行
-
-```bash
-$ ~/RanageNetTrt8/devel/lib/rangenet_lib/infer -s ~/RanageNetTrt8/src/example/000000.bin -p ~/RanageNetTrt8/src/darknet53 -v
-# s: sample
-# p: model dir
-# v: output verbose log
-
-# ros example
-$ ~/RanageNetTrt8/devel/lib/rangenet_lib/infer/ros_examples
-```
+<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ros.gif" alt="img" style="zoom:67%;" />
 
 **NOTE**
 
