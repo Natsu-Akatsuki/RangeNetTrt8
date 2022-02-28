@@ -4,8 +4,9 @@
 
 ## **Attention**
 
-- **最近正在进行大幅度地改动，本仓库暂时不能稳定使用~**
+- **最近正在进行大幅度地改动，本仓库暂时不能很稳定地使用~**
 - 由于使用了较新的API，本工程只适用于TensorRT8.2.3，但可自行查文档修改相应的API
+- 使用过conda环境的torch，然后发现速度会相对较慢(6ms->30ms)
 
 ## Feature
 
@@ -25,7 +26,10 @@
 
 <img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220227223539620.png" alt="image-20220227223539620" style="zoom:80%;" />
 
+## TODO
 
+- [ ] 去掉0均值1方差的数据预处理，重新训练模型（毕竟已经有BN层了）
+- [ ] fix: 每次运行的结果不一样...（就很迷）
 
 ## 文件树
 

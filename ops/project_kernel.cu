@@ -25,16 +25,12 @@ __global__ void project_kernel(const float *pointcloud, int point_num,
   if (idx >= point_num) {
     return;
   }
-
-  float x = pointcloud[idx * POINT_DIMS + 0];
-  float y = pointcloud[idx * POINT_DIMS + 1];
-  float z = pointcloud[idx * POINT_DIMS + 2];
-  float intensity = pointcloud[idx * POINT_DIMS + 3];
-  float range = sqrtf(x * x + y * y + z * z);
+  float4 point = ((float4 *) pointcloud)[idx];
+  float range = sqrtf(point.x * point.x + point.y * point.y + point.z * point.z);
 
   // get angle
-  float yaw = -atan2f(y, x);
-  float pitch = asinf(z / range);
+  float yaw = -atan2f(point.y, point.x);
+  float pitch = asinf(point.z / range);
 
   float pixel_x = 0.5 * (yaw / M_PI + 1.0);                 // in [0.0, 1.0]
   float pixel_y = 1.0 - (pitch + std::abs(fov_down)) / fov; // in [0.0, 1.0]
@@ -51,19 +47,22 @@ __global__ void project_kernel(const float *pointcloud, int point_num,
   // note: tensorrt network input shape is (C,H,W)
   int HWoffset = int(pixel_y) * IMG_W + int(pixel_x);
   int Coffset = IMG_H * IMG_W;
-  // 表明为有效的像素格
-  valid_idx[HWoffset] = true;
 
-  // 只存储range最小的激光点的属性
-  float temp = range_img[0 * Coffset + HWoffset];
-  if (fabsf(temp) <= 1e-6 || range < temp) {
-    // 保证写入时该地址不会被其他线程操作 (cuda的write本身是原子操作)
-    range_img[0 * Coffset + HWoffset] = (range - means[0]) / stds[0];
-    range_img[1 * Coffset + HWoffset] = (x - means[1]) / stds[1];
-    range_img[2 * Coffset + HWoffset] = (y - means[2]) / stds[2];
-    range_img[3 * Coffset + HWoffset] = (z - means[3]) / stds[3];
-    range_img[4 * Coffset + HWoffset] = (intensity - means[4]) / stds[4];
+  // only keep the most close point
+  if (valid_idx[HWoffset]) {
+    if (range_img[0 * Coffset + HWoffset] < ((range - means[0]) / stds[0])) {
+      return;
+    }
   }
+  // 保证写入时该地址不会被其他线程操作
+  atomicExch(range_img + 0 * Coffset + HWoffset, (range - means[0]) / stds[0]);
+  atomicExch(range_img + 1 * Coffset + HWoffset, (point.x - means[1]) / stds[1]);
+  atomicExch(range_img + 2 * Coffset + HWoffset, (point.y - means[2]) / stds[2]);
+  atomicExch(range_img + 3 * Coffset + HWoffset, (point.z - means[3]) / stds[3]);
+  atomicExch(range_img + 4 * Coffset + HWoffset, (point.w - means[4]) / stds[4]);
+
+  // 表明为有效的像素格（已有激光点）
+  valid_idx[HWoffset] = true;
 }
 
 void project_host(const float *pointcloud_device, int point_num,
