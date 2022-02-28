@@ -35,6 +35,6 @@ int main(int argc, const char *argv[]) {
 
   // step5: infer
   auto labels = std::make_unique<int[]>(pointcloud->size());
-  net->infer(*pointcloud, labels.get());
+  net->doInfer(*pointcloud, labels.get());
   return 0;
 }

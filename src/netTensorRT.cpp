@@ -36,14 +36,13 @@ NetTensorRT::~NetTensorRT() {
     CHECK_CUDA_ERROR(cudaFreeHost(buffer));
   std::cout << "cuda pinned mem released." << std::endl;
 
-
   CHECK_CUDA_ERROR(cudaStreamDestroy(stream_));
   CHECK_CUDA_ERROR(cudaEventDestroy(start_));
   CHECK_CUDA_ERROR(cudaEventDestroy(stop_));
 }
-#define PERFORMANCE_LOG 1
-void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
-                        int labels[]) {
+
+void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
+                          int labels[]) {
   uint32_t num_points = pointcloud_pcl.size();
   // check if engine is valid
   if (!_engine) {
@@ -59,7 +58,7 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   ProjectGPU project_gpu(stream_);
   project_gpu.doProject(pointcloud_pcl, false);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
-  auto range_img_device = project_gpu.range_img_device_.get();
+  float *range_img_device = project_gpu.range_img_device_.get();
   _deviceBuffers[0] = range_img_device;
 
 #if PERFORMANCE_LOG
@@ -83,7 +82,6 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   exit(0);
 #endif
 
-  // step2: execute infer
 #if PERFORMANCE_LOG
   float infer_time = 0.0f;
   CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
@@ -139,16 +137,8 @@ void NetTensorRT::infer(const pcl::PointCloud<PointType> &pointcloud_pcl,
       }
     }
 
-    auto pointcloud_range = std::make_unique<float[]>(num_points);
-    for (int i = 0; i < num_points; i++) {
-      float x = project_gpu.pointcloud_[i * 4 + 0];
-      float y = project_gpu.pointcloud_[i * 4 + 1];
-      float z = project_gpu.pointcloud_[i * 4 + 2];
-      pointcloud_range[i] = sqrt(x * x + y * y + z * z);
-    }
-
     Postprocess postprocess(5, 1.0);
-    postprocess.postprocessKNN(range_img, pointcloud_range.get(), label_image,
+    postprocess.postprocessKNN(range_img, project_gpu.range_arr_.get(), label_image,
                                project_gpu.pxs_.get(), project_gpu.pys_.get(),
                                num_points, labels);
   } else {

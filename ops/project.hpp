@@ -27,7 +27,9 @@ public:
   ProjectGPU(cudaStream_t &stream);
   ~ProjectGPU();
   void doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
-                 bool isNormalize);
+                 bool is_normalize);
+
+  std::unique_ptr<float[]> range_arr_ = nullptr;
 
   // CPU
   cuda::unique_pin_ptr<float[]> pointcloud_ = nullptr;

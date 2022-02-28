@@ -62,14 +62,14 @@ make_pin_unique(const std::size_t n, bool isMulTypeSize = true) {
   return cuda::unique_pin_ptr<T>{p};
 }
 
-#if 0 /*code block*/
+#if 0
 // 普通类型
 template <typename T> cuda::unique_ptr<T> make_unique() {
   T *p;
   CHECK_CUDA_ERROR(::cudaMalloc(reinterpret_cast<void **>(&p), sizeof(T)));
   return cuda::unique_ptr<T>{p};
 }
-#endif
+#endif /*code block*/
 
 } // namespace cuda
 #endif // CUDA_UTILS_HPP

@@ -178,3 +178,6 @@ gen
 *.bin
 *.onnx
 *.trt
+cmake-*
+*.vscode
+*build

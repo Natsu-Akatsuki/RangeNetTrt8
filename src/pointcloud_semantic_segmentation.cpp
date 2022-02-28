@@ -41,7 +41,7 @@ void SemanticSegment::pointcloudCallback(
 
   // step2: infer
   auto labels = std::make_unique<int[]>(pointcloud_ros->size());
-  net_->infer(*pointcloud_ros, labels.get());
+  net_->doInfer(*pointcloud_ros, labels.get());
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
 
   // step3: publish pointcloud

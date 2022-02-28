@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(rangenet_lib)
+project(rangenet_plusplus)
 
 # ======================= COMPILE OPTION =======================
 set(CMAKE_BUILD_TYPE RELEASE)
@@ -13,6 +13,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
 # ======================= COMPILE OPTION =======================
 
+# ======================= MACRO OPTION =======================
+# add_definitions(-DPERFORMANCE_LOG)
+# ======================= MACRO OPTION =======================
 
 # 导入catkin库
 find_package(catkin REQUIRED
@@ -113,8 +116,8 @@ target_link_libraries(infer
   postprocess
   )
 
-add_executable(ros_examples example/ros_example.cpp)
-target_link_libraries(ros_examples ${catkin_LIBRARIES} ${OpenCV_LIBS}
+add_executable(pointcloud_semantic_segmentation src/pointcloud_semantic_segmentation.cpp)
+target_link_libraries(pointcloud_semantic_segmentation ${catkin_LIBRARIES} ${OpenCV_LIBS}
   rangenet_lib
   pointcloud_io
   postprocess)

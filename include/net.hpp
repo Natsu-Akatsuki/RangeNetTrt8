@@ -27,7 +27,7 @@ public:
   Net(const std::string &model_path);
   virtual ~Net(){};
 
-  virtual void infer(const pcl::PointCloud<PointType> &pointcloud_pcl, int labels[]) = 0;
+  virtual void doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl, int labels[]) = 0;
   std::vector<cv::Vec3b> getLabels(const std::vector<uint32_t> &semantic_scan);
 
 protected:

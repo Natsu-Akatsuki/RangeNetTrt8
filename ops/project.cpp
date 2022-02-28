@@ -10,10 +10,10 @@ ProjectGPU::~ProjectGPU() = default;
 /**
  *
  * @param pointcloud_ float[N,4] (x,y,z,r)
- * @param isNormalize bool 是否对强度进行归一化
+ * @param is_normalize bool 是否对强度进行归一化
  */
 void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
-                           bool isNormalize = false) {
+                           bool is_normalize = false) {
   point_num_ = pointcloud_pcl.size();
   pointcloud_size_ = point_num_ * sizeof(float) * POINT_DIMS;
 
@@ -21,17 +21,22 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
   pxs_ = cuda::make_pin_unique<float[]>(point_num_);
   pys_ = cuda::make_pin_unique<float[]>(point_num_);
   valid_idx_ = cuda::make_pin_unique<bool[]>(IMG_H * IMG_W);
+  range_arr_ = std::make_unique<float[]>(point_num_);
 
-  auto pointcloud_raw_ptr = pointcloud_.get();
   for (int i = 0; i < point_num_; i++) {
-    pointcloud_raw_ptr[i * num_point_dims + 0] = pointcloud_pcl.points[i].x;
-    pointcloud_raw_ptr[i * num_point_dims + 1] = pointcloud_pcl.points[i].y;
-    pointcloud_raw_ptr[i * num_point_dims + 2] = pointcloud_pcl.points[i].z;
-    if (isNormalize) {
-      pointcloud_raw_ptr[i * num_point_dims + 3] =
+    float x = pointcloud_pcl.points[i].x;
+    float y = pointcloud_pcl.points[i].y;
+    float z = pointcloud_pcl.points[i].z;
+    float range = sqrt(x * x + y * y + z * z);
+    pointcloud_[i * num_point_dims + 0] = x;
+    pointcloud_[i * num_point_dims + 1] = y;
+    pointcloud_[i * num_point_dims + 2] = z;
+    range_arr_[i] = range;
+    if (is_normalize) {
+      pointcloud_[i * num_point_dims + 3] =
           pointcloud_pcl.points[i].intensity / 255;
     } else {
-      pointcloud_raw_ptr[i * num_point_dims + 3] =
+      pointcloud_[i * num_point_dims + 3] =
           pointcloud_pcl.points[i].intensity;
     }
   }
@@ -91,7 +96,7 @@ void createColorImg(float *range_img, int channel) {
     for (int pixel_y = 0; pixel_y < IMG_H; pixel_y++) {
       int HWoffset = int(pixel_y) * IMG_W + int(pixel_x);
       img_depth[HWoffset] = range_img[channel * Coffset + HWoffset] /
-                            normalization[channel] * 255;
+          normalization[channel] * 255;
     }
   }
 

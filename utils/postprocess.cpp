@@ -84,10 +84,6 @@ void Postprocess::postprocessKNN(const float range_img[], float range_arr[],
   at::Tensor k2_distances =
       at::abs(unwarp_pointcloud_knn_range - range_torch).to(device_);
 
-  //
-  // cout << k2_distances.index({0, Slice(), 100}).reshape({1, -1}) << endl;
-  // cout << k2_distances.index({0, Slice(), 200}).reshape({1, -1}) << endl;
-  // cout << k2_distances.sizes() << endl;
   k2_distances = k2_distances * inv_gaussian_kernel_;
 
   /* step3: calculate the topk neighbor */
@@ -122,12 +118,7 @@ void Postprocess::postprocessKNN(const float range_img[], float range_arr[],
 
   vote_result =
       vote_result.scatter_add_(1, topklabel_idx.to(torch::kInt64), votes);
-  // for (int i = 100000; i < 100200; i++) {
-  //   cout << vote_result.index({0, Slice(), i}).reshape({1, -1}) << endl;
-  // }
-  // cout << vote_result.index({0, Slice(), 123351}).reshape({1, -1}) << endl;
-  // cout << vote_result.index({0, Slice(), 123000}).reshape({1, -1}) << endl;
-  // cout << vote_result.index({0, Slice(), 113353}).reshape({1, -1}) << endl;
+
   // 开始投票(don't let it choose unlabeled or invalid label)
   // pointcloud_labels_torch[1,N]
   at::Tensor pointcloud_labels_torch =
@@ -144,6 +135,4 @@ void Postprocess::postprocessKNN(const float range_img[], float range_arr[],
       count++;
     }
   }
-  // cout << "the point num is: " << point_num << endl;
-  // cout << "the same count number is:" << count << endl;
 }

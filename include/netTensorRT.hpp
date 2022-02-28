@@ -20,6 +20,7 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <postprocess.hpp>
 #include <project.hpp>
+#include <cuda_utils.hpp>
 using namespace nvinfer1;
 namespace rangenet {
 namespace segmentation {
@@ -76,26 +77,12 @@ public:
 
   ~NetTensorRT();
 
-  template<typename T>
-  std::vector<size_t> sort_indexes(const std::vector<T> &v) {
-
-    // initialize original index locations
-    std::vector<size_t> idx(v.size());
-    std::iota(idx.begin(), idx.end(), 0);
-
-    // sort indexes based on comparing values in v. >: decrease <: increase
-    std::sort(idx.begin(), idx.end(),
-              [&v](size_t i1, size_t i2) { return v[i1] > v[i2]; });
-
-    return idx;
-  }
-
   /**
    * @brief 获点云类别
    * @param scan
    * @return N
    */
-  void infer(const pcl::PointCloud<PointType> &pointcloud_pcl, int labels[]);
+  void doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl, int labels[]);
   int getBufferSize(Dims d, DataType t);
   void deserializeEngine(const std::string &engine_path);
   void serializeEngine(const std::string &onnx_path,
@@ -114,13 +101,6 @@ protected:
   std::unique_ptr<IExecutionContext> _context = nullptr;
 
   Logger _gLogger;
-
-  std::vector<float> proj_xs; // store a copy in original order
-  std::vector<float> proj_ys;
-
-  // explicitly set the invalid point for both inputs and outputs
-  std::vector<float> invalid_input = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-  std::vector<float> invalid_output = {1.0f};
 };
 
 } // namespace segmentation
