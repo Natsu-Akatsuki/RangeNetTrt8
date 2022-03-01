@@ -65,15 +65,15 @@ __global__ void project_kernel(const float *pointcloud, int point_num,
   valid_idx[HWoffset] = true;
 }
 
-void project_host(const float *pointcloud_device, int point_num,
-                  float *pxs_device, float *pys_device, bool *valid_idx_device,
-                  float *range_img_device, cudaStream_t &stream) {
+cudaError_t project_launch(const float *pointcloud_device, int point_num,
+                           float *pxs_device, float *pys_device, bool *valid_idx_device,
+                           float *range_img_device, cudaStream_t stream= 0) {
   // 执行核函数
   int threadsPerBlock = 256;
   int blocksPerGrid = (point_num + threadsPerBlock - 1) / threadsPerBlock;
-  printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid,
-         threadsPerBlock);
   project_kernel<<<blocksPerGrid, threadsPerBlock, 0>>>(
       pointcloud_device, point_num, pxs_device, pys_device, valid_idx_device,
       range_img_device);
+  cudaError_t err = cudaGetLastError();
+  return err;
 }

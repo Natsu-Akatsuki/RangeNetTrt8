@@ -10,10 +10,10 @@ ProjectGPU::~ProjectGPU() = default;
 /**
  *
  * @param pointcloud_ float[N,4] (x,y,z,r)
- * @param is_normalize bool 是否对强度进行归一化
+ * @param is_normalized bool 是否对强度进行归一化
  */
 void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
-                           bool is_normalize = false) {
+                           bool is_normalized = false) {
   point_num_ = pointcloud_pcl.size();
   pointcloud_size_ = point_num_ * sizeof(float) * POINT_DIMS;
 
@@ -32,7 +32,7 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
     pointcloud_[i * num_point_dims + 1] = y;
     pointcloud_[i * num_point_dims + 2] = z;
     range_arr_[i] = range;
-    if (is_normalize) {
+    if (is_normalized) {
       pointcloud_[i * num_point_dims + 3] =
           pointcloud_pcl.points[i].intensity / 255;
     } else {
@@ -53,9 +53,9 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
   CHECK_CUDA_ERROR(cudaMemcpy(pointcloud_device_.get(), pointcloud_.get(),
                               pointcloud_size_, cudaMemcpyHostToDevice));
   // execute kernel function
-  project_host(pointcloud_.get(), point_num_, pxs_device_.get(),
-               pys_device_.get(), valid_idx_device_.get(),
-               range_img_device_.get(), stream_);
+  CHECK_CUDA_ERROR(project_launch(pointcloud_.get(), point_num_, pxs_device_.get(),
+                                  pys_device_.get(), valid_idx_device_.get(),
+                                  range_img_device_.get(), stream_));
   CHECK_CUDA_ERROR(cudaGetLastError());
 
   // GPU->CPU
@@ -70,7 +70,7 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
                               cudaMemcpyDeviceToHost));
 }
 
-#if 0  /* some codeblock*/
+#if 0
 // CPU端
 CHECK_CUDA_ERROR(cudaMallocHost((void **)&range_img_,
                             IMG_H * IMG_W * FEATURE_DIMS * sizeof(float)));
