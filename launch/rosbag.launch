@@ -1,0 +1,7 @@
+<launch>
+    <arg name="bag_file" default="kitti_2011_09_30_drive_0027_synced.bag"/>
+    <!-- run rosbag -->
+    <node pkg="rosbag" type="play" name="play" output="screen" args="$(find rangenet_plusplus)/rosbag/$(arg bag_file) -l">
+        <remap from="/points_raw" to="/raw_pointcloud" />
+    </node>
+</launch> 
