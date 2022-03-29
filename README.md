@@ -73,7 +73,7 @@ $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/docker_ws/RangeNetT
 - 下载onnx模型
 
 ```bash
-$ wget -c http://www.ipb.uni-bonn.de/html/projects/bonnetal/lidar/semantic/predictions/darknet53.tar.gz -O ~/docker_ws/RangeNetTrt8/src/darknet53.tar.gz
+$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/docker_ws/RangeNetTrt8/src/darknet53.tar.gz
 $ cd ~/docker_ws/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
 ```
 
@@ -90,20 +90,28 @@ $ docker pull registry.cn-hangzhou.aliyuncs.com/gdut-iidcc/rangenet:1.0
 ```bash
 $ cd ~/docker_ws/RanageNetTrt8/src
 $ bash script/build_container_rangenet.sh
+
 # 编译和执行
-(docker) $ cd /docker_ws/RanageNetTrt8
-(docker) $ catkin_build
-(docker) $ /docker_ws/RanageNetTrt8/devel/lib/rangenet_lib/infer -s /docker_ws/RanageNetTrt8/src/example/000000.bin -p /docker_ws/RanageNetTrt8/src/darknet53 -v
-# s: sample
-# p: model dir
-# v: output verbose log
+(container root) $ cd /docker_ws/RanageNetTrt8
+# 编译前需加CMakelists_v2.txt改名字为CMakelists.txt
+(container root) $ catkin_build
+(container root) $ source devel/setup.bash
+
+# dem01:
+(container root) $ roslaunch rangenet_plusplus rangenet.launch
+# 播放包（该模型仅适用于kitti数据集，需自行下载包文件和修改该launch文档）
+(container root) $ roslaunch rangenet_plusplus rosbag.launch
+
+# demo2:
+# need modify the example/infer.yaml first
+(container root) $ ./devel/lib/rangenet_plusplus/infer
 ```
 
 **NOTE**
 
 首次运行生成TensorRT模型运行需要一段时间
 
-<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image.png" alt="img" style="zoom:80%;" />
+![image-20220330012729619](https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220330012729619.png)
 
 ## 方法二：native PC
 
@@ -147,10 +155,11 @@ TIP: 需导入各种环境变量到`~/.bashrc`
 # example
 export PATH="/home/helios/.local/bin:$PATH"
 CUDA_PATH=/usr/local/cuda/bin
+TENSORRT_PATH=${HOME}/application/TensorRT-8.2.3.0/bin
 CUDA_LIB_PATH=/usr/local/cuda/lib64
 TENSORRT_LIB_PATH=${HOME}/application/TensorRT-8.2.3.0/lib
 PYTORCH_LIB_PATH=${HOME}/application/libtorch/lib
-export PATH=${PATH}:${CUDA_PATH}:"~/bin"
+export PATH=${PATH}:${CUDA_PATH}:${TENSORRT_PATH}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:${PYTORCH_LIB_PATH}
 ```
 
@@ -171,7 +180,7 @@ $ roslaunch rangenet_plusplus rangenet.launch
 $ roslaunch rangenet_plusplus rosbag.launch
 
 # demo2:
-# modify the example/infer.yaml
+# need modify the example/infer.yaml first
 $ ./devel/lib/rangenet_plusplus/infer
 ```
 
