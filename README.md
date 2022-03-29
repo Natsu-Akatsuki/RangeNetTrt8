@@ -130,7 +130,7 @@ $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/RangeNetTrt8/src
 - 下载**onnx**模型
 
 ```bash
-$ wget -c http://www.ipb.uni-bonn.de/html/projects/bonnetal/lidar/semantic/predictions/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
+$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
 $ cd ~/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
 ```
 
@@ -164,9 +164,15 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:
 $ cd ~/RanageNetTrt8
 $ catkin_build
 $ source devel/setup.bash
+
+# dem01:
 $ roslaunch rangenet_plusplus rangenet.launch
 # 播放包（该模型仅适用于kitti数据集，需自行下载包文件和修改该launch文档）
 $ roslaunch rangenet_plusplus rosbag.launch
+
+# demo2:
+# modify the example/infer.yaml
+$ ./devel/lib/rangenet_plusplus/infer
 ```
 
 <img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ros.gif" alt="img" style="zoom:67%;" />
@@ -174,6 +180,13 @@ $ roslaunch rangenet_plusplus rosbag.launch
 **NOTE**
 
 首次运行生成TensorRT模型运行需要一段时间
+
+## Q&A
+
+- 模型解析出问题（查看是否下载的onnx模型是否完整，是否在解压缩时broken了）
+
+> [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:1: Invalid control characters encountered in text. 
+> [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:14: Message type "onnx2trt_onnx.ModelProto" has no field named "pytorch". Message type "onnx2trt_onnx.ModelProto" has no field named "pytorch"
 
 ## Citations
 
