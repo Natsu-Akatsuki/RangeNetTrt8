@@ -251,6 +251,12 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
       1U << static_cast<uint32_t>(
           nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
   auto config = std::unique_ptr<IBuilderConfig>(builder->createBuilderConfig());
+
+//  const auto tacticType =
+//      1U << static_cast<uint32_t>(TacticSource::kCUBLAS) | 1U << static_cast<uint32_t>(TacticSource::kCUBLAS_LT)
+//          | 1U << static_cast<uint32_t>(TacticSource::kCUDNN);
+//  config->setTacticSources(tacticType);
+
   config->setFlag(nvinfer1::BuilderFlag::kFP16);
   config->setMaxWorkspaceSize(5UL << 30);
   config->setFlag(BuilderFlag::kPREFER_PRECISION_CONSTRAINTS);
