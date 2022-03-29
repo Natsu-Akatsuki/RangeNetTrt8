@@ -289,7 +289,10 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
 
   auto plan = std::unique_ptr<IHostMemory>(
       builder->buildSerializedNetwork(*network, *config));
-  assert(plan != nullptr);
+  if (!plan) {
+    throw std::runtime_error("failed to build tensorrt engine");
+  }
+
   std::ofstream planFile(engine_path, std::ios::binary);
   planFile.write(static_cast<char *>(plan->data()), plan->size());
 }
