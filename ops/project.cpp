@@ -52,6 +52,8 @@ void ProjectGPU::doProject(const pcl::PointCloud<PointType> &pointcloud_pcl,
   // CPU->GPU
   CHECK_CUDA_ERROR(cudaMemcpy(pointcloud_device_.get(), pointcloud_.get(),
                               pointcloud_size_, cudaMemcpyHostToDevice));
+  CHECK_CUDA_ERROR(cudaMemset(valid_idx_device_.get(), false, IMG_H * IMG_W * sizeof(bool)));
+
   // execute kernel function
   CHECK_CUDA_ERROR(project_launch(pointcloud_.get(), point_num_, pxs_device_.get(),
                                   pys_device_.get(), valid_idx_device_.get(),
