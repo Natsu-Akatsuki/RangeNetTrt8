@@ -3,8 +3,8 @@ project(rangenet_plusplus)
 
 # ======================= COMPILE OPTION =======================
 set(CMAKE_BUILD_TYPE RELEASE)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3")
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
 # suppress eigen warning: "-Wcpp Please use cuda_runtime_api.h or cuda_runtime.h instead"
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
@@ -33,7 +33,7 @@ include_directories(
 
 
 # 导入第三方库
-set(Torch_DIR "$ENV{HOME}/application/libtorch/share/cmake/Torch")
+set(Torch_DIR "$ENV{HOME}/Application/libtorch/share/cmake/Torch")
 find_package(Torch REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED QUIET)
@@ -43,58 +43,41 @@ include_directories(${PCL_INCLUDE_DIRS}
   ${TORCH_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIR})
 
-# TensorRT
-include_directories($ENV{HOME}/application/TensorRT-8.2.3.0/include)
-set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "$ENV{HOME}/application/TensorRT-8.2.3.0/lib")
-find_library(NVINFER NAMES nvinfer)
-find_library(NVPARSERS NAMES nvparsers)
-find_library(NVINFER_PLUGIN NAMES nvinfer_plugin)
-find_library(NVONNX_PARSER NAMES nvonnxparser)
-set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER})
-
-# CUDA
-find_package(CUDA REQUIRED)
-find_library(CUBLAS_LIBRARIES cublas HINTS
-  ${CUDA_TOOLKIT_ROOT_DIR}/lib64
-  ${CUDA_TOOLKIT_ROOT_DIR}/lib
-  )
-include_directories(${CUDA_INCLUDE_DIRS})
-
+include(cmake/TensorRT.cmake)
 
 include_directories(
-  example
   include
-  utils)
+  src/ops
+  src/utils)
 
 catkin_package(
   CATKIN_DEPENDS
-  geometry_msgs
-  nav_msgs
-  roscpp
-  rospy
-  std_msgs
+    geometry_msgs
+    nav_msgs
+    roscpp
+    rospy
+    std_msgs
   INCLUDE_DIRS
-  include
+    include
   LIBRARIES
-  rangenet_lib
-  CATKIN_DEPENDS
+    rangenet_lib
   DEPENDS
-  YAML_CPP
+    YAML_CPP
 )
 
-add_library(pointcloud_io utils/pointcloud_io.cpp)
+# 处理点云IO
+add_library(pointcloud_io SHARED src/utils/pointcloud_io.cpp)
 target_link_libraries(pointcloud_io ${PCL_LIBRARIES})
 
 # cuda算子
-include_directories(ops)
-cuda_add_library(project_ops ops/project_kernel.cu ops/project.cpp)
+cuda_add_library(project_ops src/ops/project_kernel.cu src/ops/project.cpp)
 
 # 后处理
-include_directories(utils)
-add_library(postprocess utils/postprocess.cpp)
+include_directories(src/utils)
+add_library(postprocess src/utils/postprocess.cpp)
 target_link_libraries(postprocess ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 
-add_library(rangenet_lib src/net.cpp src/netTensorRT.cpp)
+add_library(rangenet_lib src/network/net.cpp src/network/netTensorRT.cpp)
 
 target_link_libraries(rangenet_lib
   ${catkin_LIBRARIES}
@@ -107,17 +90,18 @@ target_link_libraries(rangenet_lib
   ${PCL_LIBRARIES}
   )
 
-add_executable(infer example/infer.cpp)
+add_executable(single_shot_demo src/single_shot_demo.cpp)
 
-target_link_libraries(infer
+target_link_libraries(single_shot_demo
   ${OpenCV_LIBS}
   rangenet_lib
   pointcloud_io
   postprocess
   )
 
-add_executable(pointcloud_semantic_segmentation src/pointcloud_semantic_segmentation.cpp)
-target_link_libraries(pointcloud_semantic_segmentation ${catkin_LIBRARIES} ${OpenCV_LIBS}
+add_executable(semantic_segmentation_node src/semantic_segmentation_node.cpp)
+target_link_libraries(semantic_segmentation_node ${catkin_LIBRARIES} ${OpenCV_LIBS}
   rangenet_lib
   pointcloud_io
-  postprocess)
+  postprocess
+  )

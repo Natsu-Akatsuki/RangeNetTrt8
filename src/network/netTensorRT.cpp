@@ -3,9 +3,8 @@
 namespace rangenet {
 namespace segmentation {
 
-NetTensorRT::NetTensorRT(const std::string &model_path)
-    : Net(model_path) {
-
+NetTensorRT::NetTensorRT(const std::string &model_path, bool use_pcl_viewer)
+    : Net(model_path), use_pcl_viewer_(use_pcl_viewer) {
   std::string onnx_path = model_path + "model.onnx";
   std::string engine_path = model_path + "model.trt";
 
@@ -159,28 +158,29 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   std::cout<<"TIME: postprocess_time: "<< postprocess_time <<" ms." << std::endl;
 #endif
 
-#if 1
-  // 可视化点云
-  pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
-  paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
-  std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
-      new pcl::visualization::PCLVisualizer("3D Viewer"));
-  viewer->setBackgroundColor(0, 0, 0);
-  viewer->addPointCloud<pcl::PointXYZRGB>(color_pointcloud.makeShared(),
-                                          "sample cloud", 0);
-  viewer->setPointCloudRenderingProperties(
-      pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
-  viewer->addCoordinateSystem(1.0);
-  viewer->initCameraParameters();
-  viewer->setCameraPosition(-29.8411, -5.16865, 9.70893, 0, 0, 0, 0, 0, 1);
-  viewer->setCameraFieldOfView(0.523599);
-  viewer->setCameraClipDistances(0.207283, 207.283);
+  if (this->use_pcl_viewer_) {
 
-  while (!viewer->wasStopped()) {
-    viewer->spinOnce();
-    pcl_sleep(0.5);
+    // 可视化点云
+    pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
+    paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
+    std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
+        new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    viewer->addPointCloud<pcl::PointXYZRGB>(color_pointcloud.makeShared(),
+                                            "sample cloud", 0);
+    viewer->setPointCloudRenderingProperties(
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud");
+    viewer->addCoordinateSystem(1.0);
+    viewer->initCameraParameters();
+    viewer->setCameraPosition(-29.8411, -5.16865, 9.70893, 0, 0, 0, 0, 0, 1);
+    viewer->setCameraFieldOfView(0.523599);
+    viewer->setCameraClipDistances(0.207283, 207.283);
+
+    while (!viewer->wasStopped()) {
+      viewer->spinOnce();
+      pcl_sleep(0.5);
+    }
   }
-#endif
 }
 
 /**
@@ -252,10 +252,10 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
           nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
   auto config = std::unique_ptr<IBuilderConfig>(builder->createBuilderConfig());
 
-//  const auto tacticType =
-//      1U << static_cast<uint32_t>(TacticSource::kCUBLAS) | 1U << static_cast<uint32_t>(TacticSource::kCUBLAS_LT)
-//          | 1U << static_cast<uint32_t>(TacticSource::kCUDNN);
-//  config->setTacticSources(tacticType);
+  //  const auto tacticType =
+  //      1U << static_cast<uint32_t>(TacticSource::kCUBLAS) | 1U << static_cast<uint32_t>(TacticSource::kCUBLAS_LT)
+  //          | 1U << static_cast<uint32_t>(TacticSource::kCUDNN);
+  //  config->setTacticSources(tacticType);
 
   config->setFlag(nvinfer1::BuilderFlag::kFP16);
   config->setMaxWorkspaceSize(5UL << 30);

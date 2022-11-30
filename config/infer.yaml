@@ -1,0 +1,4 @@
+# 需要使用绝对路径
+DATA_PATH: "/home/helios/docker_ws/RangeNetTrt8/src/RangeNetTrt8/data/000000.pcd"
+MODEL_DIR: "/home/helios/docker_ws/RangeNetTrt8/src/RangeNetTrt8/darknet53/"
+

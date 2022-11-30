@@ -5,7 +5,7 @@
 #include "project_kernel.hpp"
 #include <cuda_runtime_api.h>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>

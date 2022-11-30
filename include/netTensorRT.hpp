@@ -73,7 +73,7 @@ private:
  */
 class NetTensorRT : public Net {
 public:
-  NetTensorRT(const std::string &model_path);
+  NetTensorRT(const std::string &model_path, bool use_pcl_viewer=false);
 
   ~NetTensorRT();
 
@@ -96,10 +96,10 @@ public:
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
   cudaStream_t stream_ = 0;
   cudaEvent_t start_, stop_;
-protected:
+private:
   std::unique_ptr<ICudaEngine> _engine = nullptr;
   std::unique_ptr<IExecutionContext> _context = nullptr;
-
+  bool use_pcl_viewer_;
   Logger _gLogger;
 };
 

@@ -3,6 +3,8 @@
 
 #include <cuda_runtime_api.h>
 #include <memory>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void CheckCudaError(cudaError_t err, const char *file, int line) {
   if (err != cudaSuccess) {
@@ -25,11 +27,11 @@ struct deleter_pin {
   void operator()(void *p) const { CHECK_CUDA_ERROR(::cudaFreeHost(p)); }
 };
 
-template <typename T> using unique_gpu_ptr = std::unique_ptr<T, deleter_gpu>;
-template <typename T> using unique_pin_ptr = std::unique_ptr<T, deleter_pin>;
+template<typename T> using unique_gpu_ptr = std::unique_ptr<T, deleter_gpu>;
+template<typename T> using unique_pin_ptr = std::unique_ptr<T, deleter_pin>;
 
 // array type for gpu
-template <typename T>
+template<typename T>
 typename std::enable_if<std::is_array<T>::value, cuda::unique_gpu_ptr<T>>::type
 make_gpu_unique(const std::size_t n, bool isMulTypeSize = true) {
   // e.g typename std::remove_extent<float[]>::type -> float;
@@ -46,7 +48,7 @@ make_gpu_unique(const std::size_t n, bool isMulTypeSize = true) {
 }
 
 // array type for pinned memory
-template <typename T>
+template<typename T>
 typename std::enable_if<std::is_array<T>::value, cuda::unique_pin_ptr<T>>::type
 make_pin_unique(const std::size_t n, bool isMulTypeSize = true) {
   // e.g typename std::remove_extent<float[]>::type -> float;

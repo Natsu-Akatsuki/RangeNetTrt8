@@ -28,7 +28,7 @@ SemanticSegment::SemanticSegment() : nh_(""), pnh_("~") {
   pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/label_pointcloud", 1);
   sub_ = nh_.subscribe<sensor_msgs::PointCloud2>(
       "/raw_pointcloud", 1, &SemanticSegment::pointcloudCallback, this);
-  net_ = std::unique_ptr<cl::Net>(new cl::NetTensorRT(model_dir));
+  net_ = std::unique_ptr<cl::Net>(new cl::NetTensorRT(model_dir, false));
 };
 
 void SemanticSegment::pointcloudCallback(
@@ -55,7 +55,7 @@ void SemanticSegment::pointcloudCallback(
 
 int main(int argc, char **argv) {
 
-  ros::init(argc, argv, "pointcloud_semantic_segmentation");
+  ros::init(argc, argv, "semantic_segmentation_node");
   SemanticSegment semantic_segment;
   while (ros::ok()) {
     ros::spin();

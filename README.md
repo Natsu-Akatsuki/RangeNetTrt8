@@ -181,7 +181,7 @@ $ roslaunch rangenet_plusplus rosbag.launch
 
 # demo2:
 # need modify the example/infer.yaml first
-$ ./devel/lib/rangenet_plusplus/infer
+$ ./devel/lib/rangenet_plusplus/single_shot_demo
 ```
 
 <img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ros.gif" alt="img" style="zoom:67%;" />
