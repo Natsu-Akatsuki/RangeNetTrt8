@@ -2,10 +2,11 @@
 
 本工程旨将[rangenet工程](https://github.com/PRBonn/rangenet_lib)部署到TensorRT8，ubuntu20.04中
 
+![image-20220330012729619](https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220330012729619.png)
+
 ## **Attention**
 
-- **最近正在进行大幅度地改动，本仓库暂时不能很稳定地使用~**
-- 由于使用了较新的API，本工程只适用于TensorRT8.2.3，但可自行查文档修改相应的API
+- 由于使用了较新的API，本工程**只适用于TensorRT8.2.3+**，但可自行查文档修改相应的API
 - 使用过conda环境的torch，然后发现速度会相对较慢(6ms->30ms)
 
 ## Feature
@@ -26,98 +27,50 @@
 
 <img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220227223539620.png" alt="image-20220227223539620" style="zoom:80%;" />
 
-## TODO
+## File Tree
 
-- [ ] 去掉0均值1方差的数据预处理，重新训练模型（毕竟已经有BN层了）
-- [ ] fix: 每次运行的结果不一样...（就很迷）
-
-## 文件树
-
-├── **build**    
-├── **devel**   
-├── **logs**   
-└── **src**   
-　└── **RangeNetTrt8**  
-　　├── **CMakeLists.txt**   
-　　├── **CMakeLists_v2.txt**   
-　　├── **darknet53**   
-　　├── **docker**   
-　　├── **example**   
-　　├── **include**   
-　　├── **launch**   
-　　├── **LICENSE**   
-　　├── **ops**   
-　　├── **package.xml**   
-　　├── **pics**   
-　　├── **README.md**   
-　　├── **rosbag**   
-　　├── **script**   
-　　├── **src**   
-　　└── **utils**  
-
-## 方法一：docker（改进ing）
-
-### 依赖
-
-- nvidia driver
-
-- [docker](https://ambook.readthedocs.io/zh/latest/docker/rst/docker-practice.html#docker)
-- [nvidia-container2](https://ambook.readthedocs.io/zh/latest/docker/rst/docker-practice.html#id4)
-
-- 创建工作空间
-
-```bash
-$ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/docker_ws/RangeNetTrt8/src
+```
+.
+├── cmake
+│   └── TensorRT.cmake
+├── CMakeLists.txt
+├── config
+│   └── infer.yaml
+├── darknet53
+│   ├── arch_cfg.yaml
+│   ├── backbone
+│   ├── data_cfg.yaml
+│   ├── model.onnx
+│   ├── model.trt
+│   ├── segmentation_decoder
+│   └── segmentation_head
+├── data
+│   ├── 000000.pcd
+│   └── 002979.pcd
+├── docker
+├── include
+│   ├── net.hpp
+│   └── netTensorRT.hpp
+├── launch
+│   ├── rangenet.launch
+│   ├── rosbag.launch
+│   └── rviz.rviz
+├── LICENSE
+├── package.xml
+├── README.md
+└── src
+    ├── network
+    ├── ops
+    ├── semantic_segmentation_node.cpp
+    ├── single_shot_demo.cpp
+    └── utils
 ```
 
-- 下载onnx模型
+## Usage
 
-```bash
-$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/docker_ws/RangeNetTrt8/src/darknet53.tar.gz
-$ cd ~/docker_ws/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
-```
+### Requirement
 
-### 安装
-
-- 拉取镜像（镜像大小约为20G，需预留足够的空间）
-
-```bash
-$ docker pull registry.cn-hangzhou.aliyuncs.com/gdut-iidcc/rangenet:1.0
-```
-
-- 创建容器
-
-```bash
-$ cd ~/docker_ws/RanageNetTrt8/src
-$ bash script/build_container_rangenet.sh
-
-# 编译和执行
-(container root) $ cd /docker_ws/RanageNetTrt8
-# 编译前需加CMakelists_v2.txt改名字为CMakelists.txt
-(container root) $ catkin_build
-(container root) $ source devel/setup.bash
-
-# dem01:
-(container root) $ roslaunch rangenet_plusplus rangenet.launch
-# 播放包（该模型仅适用于kitti数据集，需自行下载包文件和修改该launch文档）
-(container root) $ roslaunch rangenet_plusplus rosbag.launch
-
-# demo2:
-# need modify the example/infer.yaml first
-(container root) $ ./devel/lib/rangenet_plusplus/infer
-```
-
-**NOTE**
-
-首次运行生成TensorRT模型运行需要一段时间
-
-![image-20220330012729619](https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220330012729619.png)
-
-## 方法二：native PC
-
-### 依赖
-
-- **ros1**
+- **ros1 noetic**
 - **nvidia driver**
 
 - **TensorRT 8.2.3**（tar包下载）, **cuda_11.4.r11.4**,  **cudnn 8.2.4**
@@ -163,9 +116,9 @@ export PATH=${PATH}:${CUDA_PATH}:${TENSORRT_PATH}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:${PYTORCH_LIB_PATH}
 ```
 
-### 安装
+### Install and Build
 
-- 修改CMakeLists：修改其中的TensorRT, libtorch等依赖库的路径
+- 修改`CMakeLists`：修改其中的`TensorRT`, `libtorch`等依赖库的路径
 - 编译和执行
 
 ```bash
@@ -180,7 +133,7 @@ $ roslaunch rangenet_plusplus rangenet.launch
 $ roslaunch rangenet_plusplus rosbag.launch
 
 # demo2:
-# need modify the example/infer.yaml first
+# 需修改config/infer.yaml中的配置参数
 $ ./devel/lib/rangenet_plusplus/single_shot_demo
 ```
 
@@ -189,6 +142,11 @@ $ ./devel/lib/rangenet_plusplus/single_shot_demo
 **NOTE**
 
 首次运行生成TensorRT模型运行需要一段时间
+
+## TODO
+
+- [ ] 去掉0均值1方差的数据预处理，重新训练模型（毕竟已经有BN层了）
+- [ ] fix: 每次运行的结果不一样...（就很迷）
 
 ## Q&A
 
