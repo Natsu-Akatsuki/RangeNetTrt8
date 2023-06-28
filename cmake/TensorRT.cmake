@@ -2,29 +2,10 @@
 ## include(cmake/TensorRT.cmake)
 ## CUDA_LIBRARIES, CUDNN_LIBRARY, TENSORRT_LIBRARIES
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
 # suppress eigen warning: "-Wcpp Please use cuda_runtime_api.h or cuda_runtime.h instead"
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
-
-if (NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColourReset "${Esc}[m")
-  set(ColourBold "${Esc}[1m")
-  set(Red "${Esc}[31m")
-  set(Green "${Esc}[32m")
-  set(Yellow "${Esc}[33m")
-  set(Blue "${Esc}[34m")
-  set(Magenta "${Esc}[35m")
-  set(Cyan "${Esc}[36m")
-  set(White "${Esc}[37m")
-  set(BoldRed "${Esc}[1;31m")
-  set(BoldGreen "${Esc}[1;32m")
-  set(BoldYellow "${Esc}[1;33m")
-  set(BoldBlue "${Esc}[1;34m")
-  set(BoldMagenta "${Esc}[1;35m")
-  set(BoldCyan "${Esc}[1;36m")
-  set(BoldWhite "${Esc}[1;37m")
-endif ()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
+# suppress the nvcc warning: "__device__ anotation is ignored on a function"
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
 
 # >>> CUDA >>>
 option(CUDA_AVAIL "CUDA available" OFF)
@@ -35,15 +16,14 @@ if (CUDA_FOUND)
     ${CUDA_TOOLKIT_ROOT_DIR}/lib
     )
   include_directories(${CUDA_INCLUDE_DIRS})
-  message(STATUS "${Green}CUDA is available!${ColourReset}")
+  INFO_LOG("CUDA is available!")
   set(CUDA_AVAIL ON)
 else ()
-  message(SEND_ERROR "${Red}CUDA NOT FOUND${ColourReset}")
+  ERROR_LOG("CUDA NOT FOUND")
   set(CUDA_AVAIL OFF)
 endif (CUDA_FOUND)
-message(STATUS "${Blue}CUDA Libs: ${CUDA_LIBRARIES}${ColourReset}")
-message(STATUS "${Blue}CUDA Headers: ${CUDA_INCLUDE_DIRS}${ColourReset}")
-# >>> CUDA >>>
+INFO_LOG("CUDA Libs: ${CUDA_LIBRARIES}")
+INFO_LOG("CUDA Headers: ${CUDA_INCLUDE_DIRS}")
 
 # >>> CUDNN >>>
 # set flags for CUDNN availability
@@ -55,15 +35,14 @@ find_library(CUDNN_LIBRARY_PATH cudnn
   )
 
 if (CUDNN_LIBRARY_PATH)
-  message(STATUS "${Green}[INFO] CUDNN is available!${ColourReset}")
+  INFO_LOG("CUDNN is available!")
   set(CUDNN_LIBRARY ${CUDNN_LIBRARY_PATH})
   set(CUDNN_AVAIL ON)
 else ()
-  message(SEND_ERROR "${Red}[ERROR] CUDNN is NOT Available${ColourReset}")
+  ERROR_LOG("CUDNN is NOT Available")
   set(CUDNN_AVAIL OFF)
 endif ()
-message(STATUS "${Blue}CUDNN_LIBRARY: ${CUDNN_LIBRARY}${ColourReset}")
-# >>> CUDNN >>>
+INFO_LOG("CUDNN_LIBRARY: ${CUDNN_LIBRARY}")
 
 # >>> TensorRT >>>
 option(TRT_AVAIL "TensorRT available" OFF)
@@ -75,8 +54,8 @@ execute_process(
   OUTPUT_VARIABLE TRT_IS_DEB)
 
 if (NOT TRT_IS_DEB)
-  message(STATUS "${Red}[WARNING] Tensorrt is not installed through DEB package, should specify the LIBRARY_PATH and INCLUDE_PATH explicitly${ColourReset}")
-  set(TENSORRT_DIR $ENV{HOME}/Application/TensorRT-8.4.1.5)
+  INFO_LOG("TensorRT is not installed through DEB package, should specify the environment parameter TENSORRT_DIR explicitly")
+  set(TENSORRT_DIR $ENV{TENSORRT_DIR})
   include_directories(${TENSORRT_DIR}/include)
   set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${TENSORRT_DIR}/lib")
 endif ()
@@ -90,20 +69,19 @@ find_library(NVCAFFE_PARSER NAMES nvcaffe_parser)
 set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER} ${NVCAFFE_PARSER})
 set(TRT_AVAIL ON)
 
-message(STATUS "${Blue}NVINFER: ${NVINFER}${ColourReset}")
-message(STATUS "${Blue}NVPARSERS: ${NVPARSERS}${ColourReset}")
-message(STATUS "${Blue}NVINFER_PLUGIN: ${NVINFER_PLUGIN}${ColourReset}")
-message(STATUS "${Blue}NVONNX_PARSER: ${NVONNX_PARSER}${ColourReset}")
+INFO_LOG("NVINFER: ${NVINFER}")
+INFO_LOG("NVPARSERS: ${NVPARSERS}")
+INFO_LOG("NVINFER_PLUGIN: ${NVINFER_PLUGIN}")
+INFO_LOG("NVONNX_PARSER: ${NVONNX_PARSER}")
 
 if (NVINFER AND NVPARSERS AND NVINFER_PLUGIN AND NVONNX_PARSER)
-  message(STATUS "${Green}[INFO] TensorRT is available!${ColourReset}")
+  INFO_LOG("TensorRT is available!")
   set(TRT_AVAIL ON)
 else ()
-  message(SEND_ERROR "${Red}[ERROR] TensorRT is NOT Available${ColourReset}")
+  ERROR_LOG("TensorRT is NOT Available")
   set(TRT_AVAIL OFF)
 endif ()
-# >>> TensorRT >>>
 
 if (NOT (TRT_AVAIL AND CUDA_AVAIL AND CUDNN_AVAIL))
-  message(FATAL_ERROR "[ERROR] Tensorrt model won't be built, CUDA and/or CUDNN and/or TensorRT were not found.")
+  ERROR_LOG("TensorRT model won't be built, CUDA and/or CUDNN and/or TensorRT were not found.")
 endif ()

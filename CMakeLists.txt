@@ -1,75 +1,36 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(rangenet_plusplus)
+cmake_minimum_required(VERSION 3.12)
+project(rangenet_pp)
 
-# ======================= COMPILE OPTION =======================
-set(CMAKE_BUILD_TYPE RELEASE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3")
+include(cmake/Color.cmake)
+# >>> 导入三方库 >>>
+include(cmake/ThirdParty.cmake)
+
+# >>> 编译选项 >>>
+# 设置 C++标准
+# note：此处 std=c++14 不能改为 std=c++17，否则会报错（与 NVCC 有关），具体原理未知
+INFO_LOG("CMAKE_BUILD_TYPE：${CMAKE_BUILD_TYPE}")
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RELEASE)
+endif ()
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++14 -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++14 -O0")
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
-# suppress eigen warning: "-Wcpp Please use cuda_runtime_api.h or cuda_runtime.h instead"
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cpp")
 
-# suppress the nvcc warning: "__device__ anotation is ignored on a function"
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
-# ======================= COMPILE OPTION =======================
-
-# ======================= MACRO OPTION =======================
-# add_definitions(-DPERFORMANCE_LOG)
-# ======================= MACRO OPTION =======================
-
-# 导入catkin库
-find_package(catkin REQUIRED
-  COMPONENTS geometry_msgs
-  sensor_msgs
-  roscpp
-  rospy
-  std_msgs
-  pcl_ros
-  tf)
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
-
-
-# 导入第三方库
-set(Torch_DIR "$ENV{HOME}/Application/libtorch/share/cmake/Torch")
-find_package(Torch REQUIRED)
-find_package(OpenCV REQUIRED)
-find_package(PCL REQUIRED QUIET)
-find_package(yaml-cpp REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-  ${TORCH_INCLUDE_DIRS}
-  ${YAML_CPP_INCLUDE_DIR})
-
-include(cmake/TensorRT.cmake)
+# >>> 设置宏定义 >>>
+if (DEFINED PERFORMANCE_LOG)
+  add_compile_definitions(PERFORMANCE_LOG)
+endif ()
 
 include_directories(
   include
   src/ops
   src/utils)
 
-catkin_package(
-  CATKIN_DEPENDS
-    geometry_msgs
-    nav_msgs
-    roscpp
-    rospy
-    std_msgs
-  INCLUDE_DIRS
-    include
-  LIBRARIES
-    rangenet_lib
-  DEPENDS
-    YAML_CPP
-)
-
-# 处理点云IO
+# 处理点云 IO
 add_library(pointcloud_io SHARED src/utils/pointcloud_io.cpp)
 target_link_libraries(pointcloud_io ${PCL_LIBRARIES})
 
-# cuda算子
+# CUDA 算子
 cuda_add_library(project_ops src/ops/project_kernel.cu src/ops/project.cpp)
 
 # 后处理
@@ -80,28 +41,23 @@ target_link_libraries(postprocess ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 add_library(rangenet_lib src/network/net.cpp src/network/netTensorRT.cpp)
 
 target_link_libraries(rangenet_lib
-  ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
   ${OpenCV_LIBS}
   ${TENSORRT_LIBRARIES}
   ${CUDA_LIBRARIES}
   ${TORCH_LIBRARIES}
-  project_ops
   ${PCL_LIBRARIES}
+  project_ops
   )
 
-add_executable(single_shot_demo src/single_shot_demo.cpp)
+add_executable(demo src/demo.cpp)
 
-target_link_libraries(single_shot_demo
+target_link_libraries(demo
   ${OpenCV_LIBS}
   rangenet_lib
   pointcloud_io
   postprocess
   )
 
-add_executable(semantic_segmentation_node src/semantic_segmentation_node.cpp)
-target_link_libraries(semantic_segmentation_node ${catkin_LIBRARIES} ${OpenCV_LIBS}
-  rangenet_lib
-  pointcloud_io
-  postprocess
-  )
+# >>> 导入 ROS 架构下的相关代码 >>>
+include(cmake/ROS.cmake)

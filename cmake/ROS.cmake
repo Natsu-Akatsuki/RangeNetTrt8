@@ -1,0 +1,10 @@
+# 检查ROS版本
+if (DEFINED ENV{ROS_VERSION})
+  if ($ENV{ROS_VERSION} STREQUAL 1)
+    INFO_LOG("ROS1 is available!")
+    include(cmake/ROS1.cmake)
+  elseif ($ENV{ROS_VERSION} STREQUAL 2)
+    INFO_LOG("ROS2 is available!")
+    include(cmake/ROS2.cmake)
+  endif ()
+endif ()

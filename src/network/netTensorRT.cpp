@@ -67,7 +67,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 #endif
 
 #if 0
-  // opencv可视化深度图
+  // opencv 可视化深度图
   float *range_img_cv;
   cudaMallocHost((void **)&range_img_cv,
                  FEATURE_DIMS * IMG_H * IMG_W * sizeof(float));
@@ -163,8 +163,8 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     // 可视化点云
     pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
     paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
-    std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(
-        new pcl::visualization::PCLVisualizer("3D Viewer"));
+    std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
+    viewer->getRenderWindow()->GlobalWarningDisplayOff();
     viewer->setBackgroundColor(0, 0, 0);
     viewer->addPointCloud<pcl::PointXYZRGB>(color_pointcloud.makeShared(),
                                             "sample cloud", 0);
@@ -177,7 +177,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     viewer->setCameraClipDistances(0.207283, 207.283);
 
     while (!viewer->wasStopped()) {
-      viewer->spinOnce();
+      viewer->spin();
       pcl_sleep(0.5);
     }
   }
@@ -276,12 +276,12 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
                                      nvinfer1::TopKOperation::kMAX, 1, 2);
   assert(ktop_layer != nullptr);
   ktop_layer->setName("topKLayer");
-  // 将原始网络的输出替换为addTopK层的输出
+  // 将原始网络的输出替换为 addTopK 层的输出
   network->unmarkOutput(*network->getOutput(0));
   std::cout << network->getNbOutputs() << std::endl;
   network->markOutput(*ktop_layer->getOutput(1));
 
-  // 防止该层转换为16位时数据溢出 (单个 ×237, x236)
+  // 防止该层转换为 16 位时数据溢出 (单个 ×237, x236)
   int start = 236;
   int end = 238; // 238
   for (int i = start; i < end; i++) {

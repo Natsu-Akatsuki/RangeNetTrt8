@@ -1,29 +1,27 @@
-<?xml version="1.0"?>
-<package format="2">
-    <name>rangenet_plusplus</name>
-    <version>0.1.0</version>
-    <description>Core library for Segmentation using rangenet</description>
-    <maintainer email="xieyuanli.chen@igg.uni-bonn.de">Xieyuanli Chen</maintainer>
-    <author email="amilioto@uni-bonn.de">Andres Milioto</author>
-    <license>MIT</license>
+<package format="3">
+  <name>rangenet_pp</name>
+  <version>0.1.0</version>
+  <description>The rangenet_pp package</description>
+  <maintainer email="hong877381@gmail.com">helios</maintainer>
+  <license>Apache 2</license>
 
-    <!-- Dependencies -->
-    <buildtool_depend>catkin</buildtool_depend>
-    <build_depend>geometry_msgs</build_depend>
-    <build_depend>nav_msgs</build_depend>
-    <build_depend>roscpp</build_depend>
-    <build_depend>rospy</build_depend>
-    <build_depend>std_msgs</build_depend>
-    <build_depend>sensor_msgs</build_depend>
-    <build_depend>tf</build_depend>
-    <build_depend>pcl_ros</build_depend>
+  <!-- for ROS1 -->
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <depend condition="$ROS_VERSION == 1">roscpp</depend>
 
-    <exec_depend>geometry_msgs</exec_depend>
-    <exec_depend>nav_msgs</exec_depend>
-    <exec_depend>sensor_msgs</exec_depend>
-    <exec_depend>roscpp</exec_depend>
-    <exec_depend>rospy</exec_depend>
-    <exec_depend>std_msgs</exec_depend>
-    <exec_depend>tf</exec_depend>
-    <exec_depend>pcl_ros</exec_depend>
+  <!-- for ROS2 -->
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+  <depend condition="$ROS_VERSION == 2">rclcpp</depend>
+  <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
+
+  <!-- 共性部分 -->
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>pcl_ros</build_depend>
+
+  <export>
+  </export>
 </package>

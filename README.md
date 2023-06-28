@@ -1,190 +1,171 @@
-# [RangeNetTrt8](https://github.com/Natsu-Akatsuki/RangeNetTrt8)
+# RangeNetTrt8
 
-本工程旨将[rangenet工程](https://github.com/PRBonn/rangenet_lib)部署到TensorRT8，ubuntu20.04中
+## Purpose
 
-![image-20220330012729619](https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220330012729619.png)
+1）**更新的依赖和 API**：将 [RangeNet 仓库](https://github.com/PRBonn/rangenet_lib)部署到 TensorRT8+，Ubuntu20.04+ 的环境中；移除 Boost 库；使用智能指针管理 TensorRT 对象和 GPU 显存的内存回收；提供 ROS 例程
 
-## **Attention**
+2）**更快的运行速度**：修正了使用 FP16，分割精度降低的问题 [issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)，使模型在保有精度的同时，预测速度大大提升；使用 CUDA 编程对数据进行预处理；使用 libtorch 对数据进行 KNN 后处理（参考 [Here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)）
 
-- 由于使用了较新的API，本工程**只适用于TensorRT8.2.3+**，但可自行查文档修改相应的API
-- 使用过conda环境的torch，然后发现速度会相对较慢(6ms->30ms)
+<p align="center">
+	<img src="assets/000000.png" alt="img" width=50% height=50% />
+</p>
 
-## Feature
+## Prerequisites
 
-更新的依赖和API
+1）步骤 1：下载和解压缩 libtorch
 
-- 将代码部署环境提升到**TensorRT8**, **ubuntu20.04**
-- 提供**docker**环境
-- 移除**boost**库
-- 使用**智能指针**管理tensorrt对象和GPU显存的内存回收
-- 提供**ros**例程
-
-更快的运行速度
-
-- 修正了使用**FP16**，分割精度降低的问题[issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)。使模型在保有精度的同时，预测速度大大提升
-- 使用**cuda**编程对数据进行预处理
-- 使用**libtorch**对数据进行knn后处理([参考代码here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py))
-
-<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/image-20220227223539620.png" alt="image-20220227223539620" style="zoom:80%;" />
-
-## File Tree
-
-```
-.
-├── cmake
-│   └── TensorRT.cmake
-├── CMakeLists.txt
-├── config
-│   └── infer.yaml
-├── darknet53
-│   ├── arch_cfg.yaml
-│   ├── backbone
-│   ├── data_cfg.yaml
-│   ├── model.onnx
-│   ├── model.trt
-│   ├── segmentation_decoder
-│   └── segmentation_head
-├── data
-│   ├── 000000.pcd
-│   └── 002979.pcd
-├── docker
-├── include
-│   ├── net.hpp
-│   └── netTensorRT.hpp
-├── launch
-│   ├── rangenet.launch
-│   ├── rosbag.launch
-│   └── rviz.rviz
-├── LICENSE
-├── package.xml
-├── README.md
-└── src
-    ├── network
-    ├── ops
-    ├── semantic_segmentation_node.cpp
-    ├── single_shot_demo.cpp
-    └── utils
-```
-
-## Usage
-
-### Requirement
-
-- **ros1 noetic**
-- **nvidia driver**
-
-- **TensorRT 8.2.3**（tar包下载）, **cuda_11.4.r11.4**,  **cudnn 8.2.4**
-
-- apt package and python package
-
-```bash
-$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy
-$ pip install catkin_tools trollius numpy
-```
-
-- 创建工作空间
-
-```bash
-$ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/RangeNetTrt8/src
-```
-
-- 下载**onnx**模型
-
-```bash
-$ wget -c https://www.ipb.uni-bonn.de/html/projects/semantic_suma/darknet53.tar.gz -O ~/RangeNetTrt8/src/darknet53.tar.gz
-$ cd ~/RangeNetTrt8/src && tar -xzvf darknet53.tar.gz
-```
-
-- 下载**libtorch**
+> **Note**
+>
+> 使用过 Conda 环境的 Torch 库，然后发现其速度会相对较慢，后处理部分从 6 ms 到 30 ms
 
 ```bash
 $ wget -c https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.10.2%2Bcu113.zip -O libtorch.zip
 $ unzip libtorch.zip
 ```
 
-TIP: 需导入各种环境变量到`~/.bashrc`
+2）步骤 2：搭建深度学习环境，可参考 [Here](https://natsu-akatsuki.github.io/ambook/#/Deep%20Learning/Setup)，已测试版本如下，至少需要用到 3000 M 的显存
+
+| Ubuntu | TensorRT |      CUDA       |    cuDNN    |         —          |
+|:------:|:--------:|:---------------:|:-----------:|:------------------:|
+| 20.04  |  8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
+| 22.04  | 8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 |        :x:         |
+
+添加环境变量到 ~/.bashrc
 
 ```bash
-# example
-export PATH="/home/helios/.local/bin:$PATH"
+# 示例配置：
+
+# >>> 深度学习配置 >>>
+# 导入CUDA环境
 CUDA_PATH=/usr/local/cuda/bin
-TENSORRT_PATH=${HOME}/application/TensorRT-8.2.3.0/bin
 CUDA_LIB_PATH=/usr/local/cuda/lib64
-TENSORRT_LIB_PATH=${HOME}/application/TensorRT-8.2.3.0/lib
-PYTORCH_LIB_PATH=${HOME}/application/libtorch/lib
+
+# 导入TensorRT环境
+export TENSORRT_DIR=${HOME}/Application/TensorRT-8.4.1.5/
+TENSORRT_PATH=${TENSORRT_DIR}/bin
+TENSORRT_LIB_PATH=${TENSORRT_DIR}/lib
+
+# 导入libtorch环境
+export Torch_DIR=${HOME}/Application/libtorch/share/cmake/Torch"
+
 export PATH=${PATH}:${CUDA_PATH}:${TENSORRT_PATH}
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}:${PYTORCH_LIB_PATH}
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}
 ```
 
-### Install and Build
+3）步骤 3：（可选，若需要使用 ROS 的相关组件）ROS1（Noetic），ROS2（Humble）
 
-- 修改`CMakeLists`：修改其中的`TensorRT`, `libtorch`等依赖库的路径
-- 编译和执行
+4）步骤 4：安装 apt 和 Python 包
 
 ```bash
-# 编译和执行
-$ cd ~/RanageNetTrt8
-$ catkin_build
+$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy
+$ pip install catkin_tools trollius numpy
+```
+
+## Install
+
+1）步骤一：导入仓库
+
+```bash
+$ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/rangetnet_pp/src
+```
+
+2）步骤二：导入模型文件（在 rangenet_pp/src 下解压缩 model.tar.gz 和新建 data 文件夹，并在该文件夹下按需下载实例代码），相关文件见[百度云](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394)
+
+<details>
+    <summary>目录结构</summary>
+
+```bash
+.
+├── model
+│   ├── arch_cfg.yaml
+│   ├── data_cfg.yaml
+│   └── model.onnx
+├── data
+└── ├── 000000.pcd
+    ├── kitti_2011_09_30_drive_0027_synced
+    └── kitti_2011_09_30_drive_0027_synced.bag
+```
+
+</details>
+
+## Usage
+
+首次运行需要等待一段时间，生成 TensorRT 优化引擎（engine）
+
+<details>
+    <summary>:wrench: <b>用例 1：</b>
+        在 ROS1 或 ROS2 架构下跑数据
+    </summary>
+<p align="center">
+	<img src="assets/ros.gif" alt="img" width=50% height=50% />
+</p>
+
+
+
+```bash
+$ cd ~/rangetnet_pp/
+$ catkin build
 $ source devel/setup.bash
-
-# dem01:
-$ roslaunch rangenet_plusplus rangenet.launch
-# 播放包（该模型仅适用于kitti数据集，需自行下载包文件和修改该launch文档）
-$ roslaunch rangenet_plusplus rosbag.launch
-
-# demo2:
-# 需修改config/infer.yaml中的配置参数
-$ ./devel/lib/rangenet_plusplus/single_shot_demo
+$ roslaunch rangenet_pp rangenet.launch
+$ roslaunch rangenet_pp rosbag.launch
 ```
 
-<img src="https://natsu-akatsuki.oss-cn-guangzhou.aliyuncs.com/img/ros.gif" alt="img" style="zoom:67%;" />
+</details>
 
-**NOTE**
+<details>
+    <summary>:wrench: <b>用例 2：</b>
+        预测单帧点云（PCD 格式）
+    </summary>
 
-首次运行生成TensorRT模型运行需要一段时间
-
-## TODO
-
-- [ ] 去掉0均值1方差的数据预处理，重新训练模型（毕竟已经有BN层了）
-- [ ] fix: 每次运行的结果不一样...（就很迷）
-
-## Q&A
-
-- 模型解析出问题（查看是否下载的onnx模型是否完整，是否在解压缩时broken了）
-
-> [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:1: Invalid control characters encountered in text. 
-> [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:14: Message type "onnx2trt_onnx.ModelProto" has no field named "pytorch". Message type "onnx2trt_onnx.ModelProto" has no field named "pytorch"
-
-## Citations
-
-If you use this library for any academic work, please cite the original [paper](https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/milioto2019iros.pdf).
+> **Note**
+>
+> PCD 点云字段为 xyzi，强度字段（intensity）需要归一化（0-1）
 
 ```
-@inproceedings{milioto2019iros,
-  author    = {A. Milioto and I. Vizzo and J. Behley and C. Stachniss},
-  title     = {{RangeNet++: Fast and Accurate LiDAR Semantic Segmentation}},
-  booktitle = {IEEE/RSJ Intl.~Conf.~on Intelligent Robots and Systems (IROS)},
-  year      = 2019,
-  codeurl   = {https://github.com/PRBonn/lidar-bonnetal},
-  videourl  = {https://youtu.be/wuokg7MFZyU},
-}
+# 修改 config/infer.yaml 中的配置参数
+$ mkdir build
+$ cd build
+$ cmake .. && make
+$ ./demo
 ```
 
-If you use SuMa++, please cite the corresponding [paper](https://www.ipb.uni-bonn.de/wp-content/papercite-data/pdf/chen2019iros.pdf):
+</details>
 
+<details>
+    <summary>:wrench: <b>用例 3：</b>
+        显示预处理、预测时间、后处理时间
+    </summary>
+
+```bash
+# 对于用例 1
+（ROS1）$ catkin build --cmake-args -DPERFORMANCE_LOG=ON
+（ROS2）$ colcon build --cmake-args -DPERFORMANCE_LOG=ON
+
+# 对于用例 2
+$ cmake -DPERFORMANCE_LOG=ON .. 
 ```
-@inproceedings{chen2019iros, 
-  author    = {X. Chen and A. Milioto and E. Palazzolo and P. Giguère and J. Behley and C. Stachniss},
-  title     = {{SuMa++: Efficient LiDAR-based Semantic SLAM}},
-  booktitle = {Proceedings of the IEEE/RSJ Int. Conf. on Intelligent Robots and Systems (IROS)},
-  year      = {2019},
-  codeurl   = {https://github.com/PRBonn/semantic_suma/},
-  videourl  = {https://youtu.be/uo3ZuLuFAzk},
-}
-```
 
-## License
+</details>
 
-Copyright 2019, Xieyuanli Chen, Andres Milioto, Jens Behley, Cyrill Stachniss, University of Bonn.
 
-This project is free software made available under the MIT License. For details see the LICENSE file.
+ 
+
+## FAQ
+
+<details>
+    <summary>:question: <b>问题 1：</b>
+        [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:1:
+    </summary>
+
+1）情况一：下载的 ONNX 模型不完整，模型解析出问题。重新下载即可。
+
+</details>
+
+## Roadmap
+
+- [ ] 追加 Pybind11 实现
+- [ ] 追加英文文档
+- [ ] 解决算法随机性的问题
+- [ ] 提供 Docker 环境
+- [ ] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8)
