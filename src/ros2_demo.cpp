@@ -27,14 +27,14 @@ ROS_DEMO::ROS_DEMO() : Node("ros2_demo") {
 
   pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/label_pointcloud", 10);
   sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-    "/raw_pointcloud", 10, std::bind(&ROS_DEMO::pointcloudCallback, this, std::placeholders::_1));
+    "/points_raw", 10, std::bind(&ROS_DEMO::pointcloudCallback, this, std::placeholders::_1));
   net_ = std::unique_ptr<rangenet::segmentation::Net>(new rangenet::segmentation::NetTensorRT(model_dir, false));
 };
 
 void ROS_DEMO::pointcloudCallback(
   const sensor_msgs::msg::PointCloud2::SharedPtr pc_msg) {
 
-  // ROS消息类型 -> PCL点云类型
+  // ROS 消息类型 -> PCL 点云类型
   pcl::PointCloud<PointType>::Ptr pc_ros(new pcl::PointCloud<PointType>());
   pcl::fromROSMsg(*pc_msg, *pc_ros);
 

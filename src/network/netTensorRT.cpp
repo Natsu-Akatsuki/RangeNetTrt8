@@ -86,7 +86,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
 #endif
 
-  _context->enqueue(1, (void **) &_deviceBuffers[0], stream_, nullptr);
+  _context->enqueueV2((void **) &_deviceBuffers[0], stream_, nullptr);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
   int totoalSize = getBufferSize(_engine->getBindingDimensions(1),
                                  _engine->getBindingDataType(1));
@@ -246,7 +246,6 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
   // create inference builder
   auto builder = std::unique_ptr<IBuilder>(createInferBuilder(_gLogger));
   assert(builder != nullptr);
-  builder->setMaxBatchSize(1);
   const auto explicitBatch =
       1U << static_cast<uint32_t>(
           nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
@@ -281,15 +280,21 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
   std::cout << network->getNbOutputs() << std::endl;
   network->markOutput(*ktop_layer->getOutput(1));
 
-  // 防止该层转换为 16 位时数据溢出 (单个 ×237, x236)
-  int start = 236;
-  int end = 238; // 238
-  for (int i = start; i < end; i++) {
+  // 防止该层转换为 16 位时数据溢出
+  // 1-236 层的权值类型设置为 FP16
+  // 236-237 层的权值类型设置为 FP32
+  // 237 层的权值类型设置为 INT32
+  // 使用 TensorRT 8.2 版本时 start 应设置为 236
+  // 使用 TensorRT 8.4 版本时 start 应设置为 235
+  int start = 235;
+  int end = 237;
+  for (int i = start; i <= end; i++) {
     auto layer = network->getLayer(i);
     std::string layerName = layer->getName();
     layer->setPrecision(nvinfer1::DataType::kFLOAT);
   }
   auto layer = network->getLayer(238);
+  // note：ktop 层输出为整型
   std::string layerName = layer->getName();
   layer->setPrecision(nvinfer1::DataType::kINT32);
 

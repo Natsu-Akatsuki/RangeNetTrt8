@@ -2,9 +2,12 @@
 
 ## Purpose
 
-1）**更新的依赖和 API**：将 [RangeNet 仓库](https://github.com/PRBonn/rangenet_lib)部署到 TensorRT8+，Ubuntu20.04+ 的环境中；移除 Boost 库；使用智能指针管理 TensorRT 对象和 GPU 显存的内存回收；提供 ROS 例程
+1）**更新的依赖和 API**：将 [RangeNet 仓库](https://github.com/PRBonn/rangenet_lib)部署到 TensorRT8+，Ubuntu20.04+ 的环境中；移除
+Boost 库；使用智能指针管理 TensorRT 对象和 GPU 显存的内存回收；提供 ROS 例程
 
-2）**更快的运行速度**：修正了使用 FP16，分割精度降低的问题 [issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)，使模型在保有精度的同时，预测速度大大提升；使用 CUDA 编程对数据进行预处理；使用 libtorch 对数据进行 KNN 后处理（参考 [Here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)）
+2）**更快的运行速度**：修正了使用 FP16，分割精度降低的问题 [issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)
+，使模型在保有精度的同时，预测速度大大提升；使用 CUDA 编程对数据进行预处理；使用 libtorch 对数据进行 KNN
+后处理（参考 [Here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)）
 
 <p align="center">
 	<img src="assets/000000.png" alt="img" width=50% height=50% />
@@ -23,13 +26,14 @@ $ wget -c https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-
 $ unzip libtorch.zip
 ```
 
-2）步骤 2：搭建深度学习环境，可参考 [Here](https://natsu-akatsuki.github.io/ambook/#/Deep%20Learning/Setup)，已测试版本如下，至少需要用到 3000 M 的显存
+2）步骤 2：搭建深度学习环境，可参考 [Here](https://natsu-akatsuki.github.io/ambook/#/Deep%20Learning/Setup)，已测试版本如下，至少需要用到
+3000 M 的显存
 
-| Ubuntu | TensorRT |      CUDA       |    cuDNN    |         —          |
-|:------:|:--------:|:---------------:|:-----------:|:------------------:|
-| 20.04  |  8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
-| 22.04  | 8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
-| 22.04  | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 |        :x:         |
+| Ubuntu |           GPU           | TensorRT |      CUDA       |    cuDNN    |         —          |
+| :----: | :---------------------: | :------: | :-------------: | :---------: | :----------------: |
+| 20.04  |        TITAN RTX        |  8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 | 8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
 
 添加环境变量到 ~/.bashrc
 
@@ -70,7 +74,8 @@ $ pip install catkin_tools trollius numpy
 $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/rangetnet_pp/src
 ```
 
-2）步骤二：导入模型文件（在 rangenet_pp/src 下解压缩 model.tar.gz 和新建 data 文件夹，并在该文件夹下按需下载实例代码），相关文件见[百度云](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394)
+2）步骤二：导入模型文件（在 rangenet_pp/src 下解压缩 model.tar.gz 和新建 data
+文件夹，并在该文件夹下按需下载实例代码），相关文件见[百度云](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394)
 
 <details>
     <summary>目录结构</summary>
@@ -100,8 +105,6 @@ $ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/rangetnet_pp/src
 <p align="center">
 	<img src="assets/ros.gif" alt="img" width=50% height=50% />
 </p>
-
-
 
 ```bash
 $ cd ~/rangetnet_pp/
@@ -148,9 +151,6 @@ $ cmake -DPERFORMANCE_LOG=ON ..
 
 </details>
 
-
- 
-
 ## FAQ
 
 <details>
@@ -162,10 +162,21 @@ $ cmake -DPERFORMANCE_LOG=ON ..
 
 </details>
 
+<details>
+    <summary>:question: <b>问题 2：</b>
+        TensorRT 从 8.2 升级到 8.4 时，预测结果异常，详见 <a href="https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8">issue#8</a>
+    </summary>
+
+不对 235 层的模型权重不进行优化即可
+
+</details>
+
 ## Roadmap
 
 - [ ] 追加 Pybind11 实现
 - [ ] 追加英文文档
 - [ ] 解决算法随机性的问题
 - [ ] 提供 Docker 环境
-- [ ] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8)
+- [x] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) 2023.07.01
+- [ ] 遵循代码规范，重构代码，提高可读性
+- [ ] 测试 ROS1 demo
