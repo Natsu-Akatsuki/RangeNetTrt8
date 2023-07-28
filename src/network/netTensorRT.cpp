@@ -164,7 +164,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
     pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
     paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
     std::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D Viewer"));
-    viewer->getRenderWindow()->GlobalWarningDisplayOff();
+    // viewer->getRenderWindow()->GlobalWarningDisplayOff();
     viewer->setBackgroundColor(0, 0, 0);
     viewer->addPointCloud<pcl::PointXYZRGB>(color_pointcloud.makeShared(),
                                             "sample cloud", 0);

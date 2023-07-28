@@ -1,9 +1,9 @@
 #include "netTensorRT.hpp"
 #include "pointcloud_io.h"
 #include "yaml-cpp/yaml.h"
+#include <filesystem>
 #include <iostream>
 #include <string>
-#include <filesystem>
 
 void inline initialGPU() {
   cudaSetDevice(0);
@@ -19,8 +19,8 @@ int main(int argc, const char *argv[]) {
   auto config_path = std::string(file_path.parent_path().parent_path() / "config" / "infer.yaml");
 
   YAML::Node config = YAML::LoadFile(config_path);
-  const auto data_path = config["DATA_PATH"].as<std::string>();
-  const auto model_dir = config["MODEL_DIR"].as<std::string>();
+  std::string data_path = std::string(file_path.parent_path().parent_path()) + "/" + config["DATA_PATH"].as<std::string>();
+  const std::string model_dir = std::string(file_path.parent_path().parent_path() / "model/");
 
   // step3: load the pointcloud
   pcl::PointCloud<PointType>::Ptr pointcloud(new pcl::PointCloud<PointType>);

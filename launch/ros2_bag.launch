@@ -1,0 +1,6 @@
+<launch>
+  <arg name="bag_file" default="kitti_2011_09_30_drive_0027_synced"/>
+  <executable
+      cmd="ros2 bag play $(find-pkg-share rangenet_pp)/data/$(var bag_file)"
+      output="screen"/>
+</launch> 

@@ -1,0 +1,4 @@
+<launch>
+  <arg name="bag_file" default="kitti_2011_09_30_drive_0027_synced.bag"/>
+  <node pkg="rosbag" type="play" name="play" output="screen" args="$(find rangenet_pp)/data/$(arg bag_file)" />
+</launch> 

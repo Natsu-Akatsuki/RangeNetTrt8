@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rangenet_pp" exec="ros2_demo" name="rangenet_pp" output="screen"/>
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share rangenet_pp)/launch/rviz.rviz"/>
+</launch>

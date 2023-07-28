@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rangenet_pp" type="ros1_demo" name="rangenet_pp" output="screen"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rangenet_pp)/launch/ros1.rviz"/>
+</launch>

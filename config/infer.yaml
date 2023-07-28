@@ -1,4 +1,3 @@
-# 需要使用绝对路径
-DATA_PATH: "/home/helios/Github/RangeNetTrt8/data/000000.pcd"
-MODEL_DIR: "/home/helios/Github/RangeNetTrt8/model/"
+# 相对于工程根目录
+DATA_PATH: "data/000000.pcd"
 
