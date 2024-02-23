@@ -1,4 +1,5 @@
 #include <netTensorRT.hpp>
+#include <NvInferVersion.h>
 
 namespace rangenet {
 namespace segmentation {
@@ -28,10 +29,10 @@ NetTensorRT::NetTensorRT(const std::string &model_path, bool use_pcl_viewer)
 NetTensorRT::~NetTensorRT() {
 
   // free cuda buffers
-  CHECK_CUDA_ERROR(cudaFree(_deviceBuffers[1]));
+  CHECK_CUDA_ERROR(cudaFree(device_buffers_[1]));
   std::cout << "cuda buffers released." << std::endl;
   // free cuda pinned mem
-  for (auto &buffer : _hostBuffers)
+  for (auto &buffer : host_buffers_)
     CHECK_CUDA_ERROR(cudaFreeHost(buffer));
   std::cout << "cuda pinned mem released." << std::endl;
 
@@ -44,7 +45,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
                           int labels[]) {
   uint32_t num_points = pointcloud_pcl.size();
   // check if engine is valid
-  if (!_engine) {
+  if (!engine_) {
     throw std::runtime_error("Invaild engine on inference.");
   }
 
@@ -58,7 +59,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   project_gpu.doProject(pointcloud_pcl, false);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
   float *range_img_device = project_gpu.range_img_device_.get();
-  _deviceBuffers[0] = range_img_device;
+  device_buffers_[0] = range_img_device;
 
 #if PERFORMANCE_LOG
   CHECK_CUDA_ERROR(cudaEventRecord(stop_, stream_));
@@ -86,11 +87,11 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   CHECK_CUDA_ERROR(cudaEventRecord(start_, stream_));
 #endif
 
-  _context->enqueueV2((void **) &_deviceBuffers[0], stream_, nullptr);
+  context_->enqueueV2((void **) &device_buffers_[0], stream_, nullptr);
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
-  int totoalSize = getBufferSize(_engine->getBindingDimensions(1),
-                                 _engine->getBindingDataType(1));
-  CHECK_CUDA_ERROR(cudaMemcpy(_hostBuffers[1], _deviceBuffers[1], totoalSize,
+  int totoalSize = getBufferSize(engine_->getBindingDimensions(1),
+                                 engine_->getBindingDataType(1));
+  CHECK_CUDA_ERROR(cudaMemcpy(host_buffers_[1], device_buffers_[1], totoalSize,
                               cudaMemcpyDeviceToHost));
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
 
@@ -98,7 +99,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 
   for (int pixel_id = 0; pixel_id < IMG_H * IMG_W; pixel_id++) {
     if (project_gpu.valid_idx_[pixel_id]) {
-      label_image[pixel_id] = ((int *) _hostBuffers[1])[pixel_id];
+      label_image[pixel_id] = ((int *) host_buffers_[1])[pixel_id];
     } else {
       label_image[pixel_id] = 0;
     }
@@ -106,9 +107,9 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
 
   // range image GPU->CPU
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
-  totoalSize = getBufferSize(_engine->getBindingDimensions(0),
-                             _engine->getBindingDataType(0));
-  CHECK_CUDA_ERROR(cudaMemcpy(_hostBuffers[0], _deviceBuffers[0], totoalSize,
+  totoalSize = getBufferSize(engine_->getBindingDimensions(0),
+                             engine_->getBindingDataType(0));
+  CHECK_CUDA_ERROR(cudaMemcpy(host_buffers_[0], device_buffers_[0], totoalSize,
                               cudaMemcpyDeviceToHost));
   CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_));
 
@@ -126,7 +127,7 @@ void NetTensorRT::doInfer(const pcl::PointCloud<PointType> &pointcloud_pcl,
   // step3: postprocess
   bool isPostprocess = true;
   if (isPostprocess) {
-    auto ptr = (float *) _hostBuffers[0];
+    auto ptr = (float *) host_buffers_[0];
     // CHW
     float range_img[IMG_H * IMG_W];
     for (int pixel_x = 0; pixel_x < IMG_W; pixel_x++) {
@@ -210,12 +211,10 @@ int NetTensorRT::getBufferSize(Dims d, DataType t) {
  * @param engine_path
  */
 void NetTensorRT::deserializeEngine(const std::string &engine_path) {
-  // feedback to user where I am
-  std::cout << "Trying to deserialize previously stored: " << engine_path
-            << std::endl;
+  std::cout << "[INFO] Trying to deserialize previously stored: " << engine_path << std::endl;
 
+  // Load engine
   std::fstream file(engine_path, std::ios::binary | std::ios::in);
-
   file.seekg(0, std::ios::end);
   int length = file.tellg();
   file.seekg(0, std::ios::beg);
@@ -223,14 +222,12 @@ void NetTensorRT::deserializeEngine(const std::string &engine_path) {
   file.read(data.get(), length);
   file.close();
 
-  auto runtime = std::unique_ptr<IRuntime>(createInferRuntime(_gLogger));
-  _engine = std::unique_ptr<ICudaEngine>(
-      runtime->deserializeCudaEngine(data.get(), length, nullptr));
-  if (!_engine) {
-    throw std::runtime_error(
-        "Invalid engine. Please remember to create engine first.");
+  runtime_ = std::unique_ptr<IRuntime>(createInferRuntime(g_logger_));
+  engine_ = std::unique_ptr<ICudaEngine>(runtime_->deserializeCudaEngine(data.get(), length, nullptr));
+  if (!engine_) {
+    throw std::runtime_error("[ERROR] Invalid engine. The engine may not exist and should be created first.");
   }
-  std::cout << "Successfully deserialized Engine from trt file" << std::endl;
+  std::cout << "[INFO] Successfully deserialized engine from tensorrt file" << std::endl;
 }
 
 /**
@@ -241,38 +238,31 @@ void NetTensorRT::deserializeEngine(const std::string &engine_path) {
 void NetTensorRT::serializeEngine(const std::string &onnx_path,
                                   const std::string &engine_path) {
 
-  _gLogger.log(Logger::Severity::kINFO, "TRYING TO SERIALIZE AND SAVE ENGINE");
+  g_logger_.log(Logger::Severity::kINFO, "TRYING TO SERIALIZE AND SAVE ENGINE");
 
-  // create inference builder
-  auto builder = std::unique_ptr<IBuilder>(createInferBuilder(_gLogger));
+  // Create inference builder
+  auto builder = std::unique_ptr<IBuilder>(createInferBuilder(g_logger_));
   assert(builder != nullptr);
-  const auto explicitBatch =
-      1U << static_cast<uint32_t>(
-          nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+  const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
   auto config = std::unique_ptr<IBuilderConfig>(builder->createBuilderConfig());
 
-  //  const auto tacticType =
+  // const auto tacticType =
   //      1U << static_cast<uint32_t>(TacticSource::kCUBLAS) | 1U << static_cast<uint32_t>(TacticSource::kCUBLAS_LT)
   //          | 1U << static_cast<uint32_t>(TacticSource::kCUDNN);
-  //  config->setTacticSources(tacticType);
+  // config->setTacticSources(tacticType);
 
   config->setFlag(nvinfer1::BuilderFlag::kFP16);
   config->setMaxWorkspaceSize(5UL << 30);
   config->setFlag(BuilderFlag::kPREFER_PRECISION_CONSTRAINTS);
 
-  auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(
-      builder->createNetworkV2(explicitBatch));
+  auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
   assert(network != nullptr);
 
-  // generate a parser to get weights from onnx file
-  auto parser = std::unique_ptr<nvonnxparser::IParser>(
-      nvonnxparser::createParser(*network, _gLogger));
+  // Generate a parser to get weights from onnx file
+  auto parser = std::unique_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, g_logger_));
+  parser->parseFromFile(onnx_path.c_str(), static_cast<int>(Logger::Severity::kWARNING));
 
-  parser->parseFromFile(onnx_path.c_str(),
-                        static_cast<int>(Logger::Severity::kWARNING));
-
-  auto ktop_layer = network->addTopK(*network->getOutput(0),
-                                     nvinfer1::TopKOperation::kMAX, 1, 2);
+  auto ktop_layer = network->addTopK(*network->getOutput(0), nvinfer1::TopKOperation::kMAX, 1, 2);
   assert(ktop_layer != nullptr);
   ktop_layer->setName("topKLayer");
   // 将原始网络的输出替换为 addTopK 层的输出
@@ -280,28 +270,34 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
   std::cout << network->getNbOutputs() << std::endl;
   network->markOutput(*ktop_layer->getOutput(1));
 
-  // 防止该层转换为 16 位时数据溢出
-  // 1-236 层的权值类型设置为 FP16
-  // 236-237 层的权值类型设置为 FP32
-  // 237 层的权值类型设置为 INT32
-  // 使用 TensorRT 8.2 版本时 start 应设置为 236
-  // 使用 TensorRT 8.4 版本时 start 应设置为 235
-  int start = 235;
-  int end = 237;
-  for (int i = start; i <= end; i++) {
+  // [layer_1, fp32_begin_layer_id)            |  FP16
+  // [fp32_begin_layer_id, fp32_end_layer_id]  |  FP32
+  //          layer_ 238                       |  INT32
+  // Weights of some special layers would overflow when using the FP16, so the weight type should keep FP32.
+  // Different versions of TensorRT handle weight overflow differently, so these layers need to be dynamically adjusted.
+#if NV_TENSORRT_MAJOR == 8 and NV_TENSORRT_MINOR == 2   // For TensorRT 8.2
+  int fp32_begin_layer_id = 236;
+#elif NV_TENSORRT_MAJOR == 8 and NV_TENSORRT_MINOR == 4 // For TensorRT 8.4
+  int fp32_begin_layer_id = 235;
+#elif NV_TENSORRT_MAJOR == 8 and NV_TENSORRT_MINOR == 6 // For TensorRT 8.6
+  int fp32_begin_layer_id = 234;
+#else
+  int fp32_begin_layer_id = 235;
+#endif
+  int fp32_end_layer_id = 237;
+
+  for (int i = fp32_begin_layer_id; i <= fp32_end_layer_id; i++) {
     auto layer = network->getLayer(i);
     std::string layerName = layer->getName();
     layer->setPrecision(nvinfer1::DataType::kFLOAT);
   }
   auto layer = network->getLayer(238);
-  // note：ktop 层输出为整型
   std::string layerName = layer->getName();
   layer->setPrecision(nvinfer1::DataType::kINT32);
 
-  auto plan = std::unique_ptr<IHostMemory>(
-      builder->buildSerializedNetwork(*network, *config));
+  auto plan = std::unique_ptr<IHostMemory>(builder->buildSerializedNetwork(*network, *config));
   if (!plan) {
-    throw std::runtime_error("failed to build tensorrt engine");
+    throw std::runtime_error("Failed to build tensorrt engine");
   }
 
   std::ofstream planFile(engine_path, std::ios::binary);
@@ -309,13 +305,13 @@ void NetTensorRT::serializeEngine(const std::string &onnx_path,
 }
 
 void NetTensorRT::prepareBuffer() {
-  _context =
-      std::unique_ptr<IExecutionContext>(_engine.get()->createExecutionContext());
-  if (!_context) {
+  context_ =
+      std::unique_ptr<IExecutionContext>(engine_.get()->createExecutionContext());
+  if (!context_) {
     throw std::runtime_error("Invalid execution context. Can't infer.");
   }
 
-  int n_bindings = _engine->getNbBindings();
+  int n_bindings = engine_->getNbBindings();
   if (n_bindings != 2) {
     throw std::runtime_error("Invalid number of bindings: " +
         std::to_string(n_bindings));
@@ -330,26 +326,26 @@ void NetTensorRT::prepareBuffer() {
 #endif
 
   // clear buffers and reserve memory
-  _deviceBuffers.clear();
-  _deviceBuffers.reserve(n_bindings);
-  _hostBuffers.clear();
-  _hostBuffers.reserve(n_bindings);
+  device_buffers_.clear();
+  device_buffers_.reserve(n_bindings);
+  host_buffers_.clear();
+  host_buffers_.reserve(n_bindings);
 
   // 分配显存
-  int nbBindings = _engine->getNbBindings();
+  int nbBindings = engine_->getNbBindings();
   for (int i = 0; i < nbBindings; i++) {
-    Dims dims = _engine->getBindingDimensions(i);
-    DataType dtype = _engine->getBindingDataType(i);
+    Dims dims = engine_->getBindingDimensions(i);
+    DataType dtype = engine_->getBindingDataType(i);
     uint64_t totalSize = getBufferSize(dims, dtype);
-    CHECK_CUDA_ERROR(cudaMalloc(&_deviceBuffers[i], totalSize));
-    CHECK_CUDA_ERROR(cudaMallocHost(&_hostBuffers[i], totalSize));
+    CHECK_CUDA_ERROR(cudaMalloc(&device_buffers_[i], totalSize));
+    CHECK_CUDA_ERROR(cudaMallocHost(&host_buffers_[i], totalSize));
 
     std::string info = "I/O dimensions respectively are: [ ";
     for (int d = 0; d < dims.nbDims; d++) {
       info += std::to_string(dims.d[d]) + " ";
     }
     info = info + "]";
-    _gLogger.log(nvinfer1::ILogger::Severity::kINFO, info.c_str());
+    g_logger_.log(nvinfer1::ILogger::Severity::kINFO, info.c_str());
   }
 }
 

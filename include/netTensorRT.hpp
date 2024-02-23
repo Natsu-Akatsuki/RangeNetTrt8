@@ -91,16 +91,17 @@ public:
                        pcl::PointCloud<pcl::PointXYZRGB> &color_pointcloud,
                        int labels[]);
   void prepareBuffer();
-  std::vector<void *> _deviceBuffers;
-  std::vector<void *> _hostBuffers;
+  std::vector<void *> device_buffers_;
+  std::vector<void *> host_buffers_;
   pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud_;
   cudaStream_t stream_ = 0;
   cudaEvent_t start_, stop_;
 private:
-  std::unique_ptr<ICudaEngine> _engine = nullptr;
-  std::unique_ptr<IExecutionContext> _context = nullptr;
+  std::unique_ptr<IRuntime> runtime_ = nullptr;
+  std::unique_ptr<ICudaEngine> engine_ = nullptr;
+  std::unique_ptr<IExecutionContext> context_ = nullptr;
   bool use_pcl_viewer_;
-  Logger _gLogger;
+  Logger g_logger_;
 };
 
 } // namespace segmentation
