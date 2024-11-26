@@ -14,7 +14,7 @@ if (CUDA_FOUND)
   find_library(CUBLAS_LIBRARIES cublas HINTS
     ${CUDA_TOOLKIT_ROOT_DIR}/lib64
     ${CUDA_TOOLKIT_ROOT_DIR}/lib
-    )
+  )
   include_directories(${CUDA_INCLUDE_DIRS})
   INFO_LOG("CUDA is available!")
   set(CUDA_AVAIL ON)
@@ -32,7 +32,7 @@ option(CUDNN_AVAIL "CUDNN available" OFF)
 find_library(CUDNN_LIBRARY_PATH cudnn
   HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64/
   DOC "CUDNN library."
-  )
+)
 
 if (CUDNN_LIBRARY_PATH)
   INFO_LOG("CUDNN is available!")
@@ -58,23 +58,42 @@ if (NOT TRT_IS_DEB)
   set(TENSORRT_DIR $ENV{TENSORRT_DIR})
   include_directories(${TENSORRT_DIR}/include)
   set(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} "${TENSORRT_DIR}/lib")
+
+  # Attain TensorRT version
+  set(NVINFER_VERSION_HEADER "${TENSORRT_DIR}/include/NvInferVersion.h")
+
+  if (EXISTS ${NVINFER_VERSION_HEADER})
+    file(STRINGS ${NVINFER_VERSION_HEADER} NVINFER_VERSION_CONTENT REGEX "NV_TENSORRT_(MAJOR|MINOR|PATCH|BUILD)")
+    foreach (line IN LISTS NVINFER_VERSION_CONTENT)
+      if (line MATCHES "#define NV_TENSORRT_MAJOR\ +([0-9]+)")
+        set(NV_TENSORRT_MAJOR "${CMAKE_MATCH_1}")
+      elseif (line MATCHES "#define NV_TENSORRT_MINOR\ +([0-9]+)")
+        set(NV_TENSORRT_MINOR "${CMAKE_MATCH_1}")
+      elseif (line MATCHES "#define NV_TENSORRT_PATCH\ +([0-9]+)")
+        set(NV_TENSORRT_PATCH "${CMAKE_MATCH_1}")
+      elseif (line MATCHES "#define NV_TENSORRT_BUILD\ +([0-9]+)")
+        set(NV_TENSORRT_BUILD "${CMAKE_MATCH_1}")
+      endif ()
+    endforeach ()
+    set(TENSORRT_VERSION "${NV_TENSORRT_MAJOR}.${NV_TENSORRT_MINOR}.${NV_TENSORRT_PATCH}")
+    INFO_LOG("Detected TensorRT Version: ${TENSORRT_VERSION}")
+  else ()
+    WARNING_LOG("NvInferVersion.h not found in ${TENSORRT_INCLUDE_DIR}")
+  endif ()
 endif ()
 
 find_library(NVINFER NAMES nvinfer)
-find_library(NVPARSERS NAMES nvparsers)
 find_library(NVINFER_PLUGIN NAMES nvinfer_plugin)
 find_library(NVONNX_PARSER NAMES nvonnxparser)
-find_library(NVCAFFE_PARSER NAMES nvcaffe_parser)
 
-set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER} ${NVCAFFE_PARSER})
+set(TENSORRT_LIBRARIES ${NVINFER} ${NVPARSERS} ${NVINFER_PLUGIN} ${NVONNX_PARSER})
 set(TRT_AVAIL ON)
 
 INFO_LOG("NVINFER: ${NVINFER}")
-INFO_LOG("NVPARSERS: ${NVPARSERS}")
 INFO_LOG("NVINFER_PLUGIN: ${NVINFER_PLUGIN}")
 INFO_LOG("NVONNX_PARSER: ${NVONNX_PARSER}")
 
-if (NVINFER AND NVPARSERS AND NVINFER_PLUGIN AND NVONNX_PARSER)
+if (NVINFER AND NVINFER_PLUGIN AND NVONNX_PARSER)
   INFO_LOG("TensorRT is available!")
   set(TRT_AVAIL ON)
 else ()
