@@ -1,4 +1,4 @@
-# RangeNetTrt8
+# [RangeNet-TensorRT](https://github.com/Natsu-Akatsuki/RangeNet-TensorRT)
 
 <div align="center">
 
@@ -10,7 +10,8 @@
 
 1）**更新的依赖和 API**：将 [RangeNet 仓库](https://github.com/PRBonn/rangenet_lib)部署到 TensorRT8+，Ubuntu20.04+ 的环境中；移除 Boost 库；使用智能指针管理 TensorRT 对象和 GPU 显存的内存回收；提供 ROS 例程
 
-2）**更快的运行速度**：修正了使用 FP16，分割精度降低的问题 [issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)，使模型在保有精度的同时，预测速度大大提升；使用 CUDA 编程对数据进行预处理；使用 libtorch 对数据进行 KNN 后处理（参考 [Here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)）
+2）**更快的运行速度**：修正了使用 FP16，分割精度降低的问题 [issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)，使模型在保有精度的同时，预测速度大大提升；使用 CUDA 编程对数据进行预处理；使用 libtorch 对数据进行 KNN
+后处理（参考 [Here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)）
 
 <p align="center">
 	<img src="assets/000000.png" alt="img" width=50% height=50% />
@@ -31,12 +32,15 @@ $ unzip libtorch.zip
 
 步骤 2：搭建深度学习环境（安装 nvidia-driver, CUDA, TensorRT, cuDNN），已测试版本如下，至少需要用到 3000 M 的显存
 
-| Ubuntu |           GPU           | TensorRT |      CUDA       |    cuDNN    |         —          |
-|:------:|:-----------------------:|:--------:|:---------------:|:-----------:|:------------------:|
-| 20.04  |        TITAN RTX        |  8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
-| 20.04  | NVIDIA GeForce RTX 3060 | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.0.5 | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 | 8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| Ubuntu |           GPU           | TensorRT  |      CUDA       |    cuDNN    |         —          |
+|:------:|:-----------------------:|:---------:|:---------------:|:-----------:|:------------------:|
+| 20.04  |        TITAN RTX        |   8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
+| 20.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.0.5 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.3.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.6.1.6  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 | 10.6.0.26 | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
 
 添加环境变量到 ~/.bashrc
 
@@ -65,7 +69,7 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}
 步骤 4：安装 apt 和 Python 包
 
 ```bash
-$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy
+$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy libfmt-dev
 $ pip install catkin_tools trollius numpy
 ```
 
@@ -74,10 +78,18 @@ $ pip install catkin_tools trollius numpy
 步骤 1：导入仓库
 
 ```bash
-$ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/rangetnet_pp/src
+$ git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/RangeNet_TensorRT/src
 ```
 
-步骤 2：导入模型文件（在 rangenet_pp/src 下解压缩 model.tar.gz 和新建 data 文件夹，并在该文件夹下按需下载示例代码），相关文件见[百度云](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394)
+步骤 2：导入模型文件和数据集
+
+```bash
+# 下载模型文件
+$ wget -c https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/releases/download/v0.0.0-alpha/model.onnx
+```
+
+下载数据文件：见[百度云](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394)
+
 
 <details>
     <summary>目录结构</summary>
@@ -190,10 +202,11 @@ $ ./demo
 
 ## Roadmap
 
-- [ ] 追加 Pybind11 实现
+- [x] 测试 ROS1 demo
+- [x] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) 2023.07.01
 - [x] 追加英文文档 2024.11.19
+- [x] 解释为什么使用 FP16 会导致精度下降 2024.11.28
+- [ ] 追加 Pybind11 实现
 - [ ] 解决算法随机性的问题
 - [ ] 提供 Docker 环境
-- [x] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) 2023.07.01
 - [ ] 遵循代码规范，重构代码，提高可读性
-- [x] 测试 ROS1 demo

@@ -1,4 +1,4 @@
-# RangeNetTrt8
+# [RangeNet-TensorRT](https://github.com/Natsu-Akatsuki/RangeNet-TensorRT)
 
 <div align="center">
 
@@ -10,7 +10,8 @@
 
 1. **Use more newer dependencies and APIs**. Specifically, we deploy the [RangeNet repository](https://github.com/PRBonn/rangenet_lib) in an environment with TensorRT 8+, Ubuntu 20.04+, remove Boost dependency, manage TensorRT objects and GPU memory with smart pointers, and provide ROS demo.
 
-2. <b>Faster Performance</b>. Resolve the issue of reduced segmentation accuracy when using FP16 ([issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)), achieving a significant speed boost without sacrificing accuracy. Preprocess data using CUDA. Perform KNN post-processing with libtorch (refer to [here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)).
+2. <b>Faster Performance</b>. Resolve the issue of reduced segmentation accuracy when using FP16 ([issue#9](https://github.com/PRBonn/rangenet_lib/issues/9)), achieving a significant speed boost without sacrificing accuracy. Preprocess data using CUDA. Perform KNN post-processing with libtorch (
+   refer to [here](https://github.com/PRBonn/lidar-bonnetal/blob/master/train/tasks/semantic/postproc/KNN.py)).
 
 <p align="center">
 	<img src="assets/000000.png" alt="img" width=50% height=50% />
@@ -18,7 +19,7 @@
 
 ## Prerequisites
 
-### Step 1: Download and Extract libtorch
+Step 1: Download and Extract libtorch
 
 > **Note**  
 > Using the Torch library from Conda was observed to slow down the post-processing stage from 6 ms to 30 ms.
@@ -30,12 +31,15 @@ $ unzip libtorch.zip
 
 Step 2: Set up the deep learning environment (install NVIDIA driver, CUDA, TensorRT, cuDNN). The tested configurations are listed below. At least <u>3000 MB</u> of GPU memory is required.
 
-| Ubuntu |           GPU           | TensorRT |      CUDA       |    cuDNN    |         —          |
-|:------:|:-----------------------:|:--------:|:---------------:|:-----------:|:------------------:|
-| 20.04  |        TITAN RTX        |  8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
-| 20.04  | NVIDIA GeForce RTX 3060 | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.0.5 | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 | 8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 | 8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| Ubuntu |           GPU           | TensorRT  |      CUDA       |    cuDNN    |         —          |
+|:------:|:-----------------------:|:---------:|:---------------:|:-----------:|:------------------:|
+| 20.04  |        TITAN RTX        |   8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
+| 20.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.0.5 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.3.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 |  8.6.1.6  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
+| 22.04  | NVIDIA GeForce RTX 3060 | 10.6.0.26 | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
 
 Add the following environment variables to ~/.bashrc:
 
@@ -61,10 +65,10 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}
 
 Step 3: (Optional, if ROS components are needed). Please install ROS1 (Noetic) or ROS2 (Humble).
 
-Step 4: Install apt and Python packages
+Step 4: Install apt-related and Python packages
 
 ```bash
-$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy
+$ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake libboost-all-dev libyaml-cpp-dev libopencv-dev python3-empy libfmt-dev
 $ pip install catkin_tools trollius numpy
 ```
 
@@ -73,10 +77,17 @@ $ pip install catkin_tools trollius numpy
 Step 1: Clone the Repository
 
 ```bash
-$ git clone https://github.com/Natsu-Akatsuki/RangeNetTrt8 ~/rangetnet_pp/src
+$ git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/RangeNet_TensorRT/src
 ```
 
-Step 2: Import model files. Please extract model.tar.gz into the rangenet_pp/src directory and create a data folder for additional resources. Related files are available on [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394).
+Step 2: Import model files and datasets.
+
+```bash
+# Download model files
+$ wget -c https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/releases/download/v0.0.0-alpha/model.onnx
+```
+
+Download datasets: see [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394).
 
 <details>
     <summary>Directory Structure</summary>
