@@ -61,6 +61,7 @@ target_link_libraries(demo
   rangenet_lib
   pointcloud_io
   postprocess
+  fmt
 )
 
 # 检查 ROS 版本
@@ -74,6 +75,7 @@ if (DEFINED ENV{ROS_VERSION})
       rangenet_lib
       pointcloud_io
       postprocess
+      fmt
     )
   elseif ($ENV{ROS_VERSION} STREQUAL 2)
     INFO_LOG("ROS2 is available!")
@@ -86,6 +88,7 @@ if (DEFINED ENV{ROS_VERSION})
       rangenet_lib
       pointcloud_io
       postprocess
+      fmt
     )
     ament_auto_package(
       INSTALL_TO_SHARE

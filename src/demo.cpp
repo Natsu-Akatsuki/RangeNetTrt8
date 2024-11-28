@@ -5,12 +5,14 @@
 #include <iostream>
 #include <string>
 
-void inline initialGPU() {
+void inline initialGPU()
+{
   cudaSetDevice(0);
   cudaFree(0);
 }
 
-int main(int argc, const char *argv[]) {
+int main(int argc, const char* argv[])
+{
   // step1: initial the GPU
   initialGPU();
 
@@ -25,7 +27,8 @@ int main(int argc, const char *argv[]) {
   // step3: load the pointcloud
   pcl::PointCloud<PointType>::Ptr pointcloud(new pcl::PointCloud<PointType>);
   std::cout << "loading file: " << data_path << std::endl;
-  if (pcl::io::loadPCDFile<PointType>(data_path, *pointcloud) == -1) {
+  if (pcl::io::loadPCDFile<PointType>(data_path, *pointcloud) == -1)
+  {
     PCL_ERROR("Couldn't read file \n");
     exit(EXIT_FAILURE);
   }

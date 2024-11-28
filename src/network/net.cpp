@@ -10,133 +10,154 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
-namespace rangenet {
-namespace segmentation {
+namespace rangenet
+{
+  namespace segmentation
+  {
+    /**
+     * @brief      Constructs the object.
+     *
+     * @param[in]  model_path  The model path for the inference model directory
+     */
+    Net::Net(const std::string& model_path)
+      : _model_path(model_path)
+    {
+      // Try to get the config file as well
+      std::string arch_cfg_path = _model_path + "/arch_cfg.yaml";
+      try
+      {
+        arch_cfg = YAML::LoadFile(arch_cfg_path);
+      }
+      catch (YAML::Exception& ex)
+      {
+        throw std::runtime_error("Can't open cfg.yaml from " + arch_cfg_path);
+      }
 
-/**
- * @brief      Constructs the object.
- *
- * @param[in]  model_path  The model path for the inference model directory
- */
-Net::Net(const std::string& model_path)
-    : _model_path(model_path) {
+      // Assign fov_up and fov_down from arch_cfg
+      _fov_up = arch_cfg["dataset"]["sensor"]["fov_up"].as
+        <double>();
+      _fov_down = arch_cfg["dataset"]["sensor"]["fov_down"].as
+        <double>();
 
-  // Try to get the config file as well
-  std::string arch_cfg_path = _model_path + "/arch_cfg.yaml";
-  try {
-    arch_cfg = YAML::LoadFile(arch_cfg_path);
-  } catch (YAML::Exception& ex) {
-    throw std::runtime_error("Can't open cfg.yaml from " + arch_cfg_path);
-  }
+      std::string data_cfg_path = _model_path + "/data_cfg.yaml";
+      try
+      {
+        data_cfg = YAML::LoadFile(data_cfg_path);
+      }
+      catch (YAML::Exception& ex)
+      {
+        throw std::runtime_error("Can't open cfg.yaml from " + data_cfg_path);
+      }
 
-  // Assign fov_up and fov_down from arch_cfg
-  _fov_up = arch_cfg["dataset"]["sensor"]["fov_up"].as
-  <double>();
-  _fov_down = arch_cfg["dataset"]["sensor"]["fov_down"].as
-  <double>();
+      // Get label dictionary from yaml cfg
+      YAML::Node color_map;
+      try
+      {
+        color_map = data_cfg["color_map"];
+      }
+      catch (YAML::Exception& ex)
+      {
+        std::cerr << "Can't open one the label dictionary from cfg in " + data_cfg_path
+          << std::endl;
+        throw ex;
+      }
 
-  std::string data_cfg_path = _model_path + "/data_cfg.yaml";
-  try {
-    data_cfg = YAML::LoadFile(data_cfg_path);
-  } catch (YAML::Exception& ex) {
-    throw std::runtime_error("Can't open cfg.yaml from " + data_cfg_path);
-  }
+      // Generate string map from xentropy indexes (that we'll get from argmax)
+      YAML::const_iterator it;
 
-  // Get label dictionary from yaml cfg
-  YAML::Node color_map;
-  try {
-    color_map = data_cfg["color_map"];
-  } catch (YAML::Exception& ex) {
-    std::cerr << "Can't open one the label dictionary from cfg in " + data_cfg_path
-              << std::endl;
-    throw ex;
-  }
+      for (it = color_map.begin(); it != color_map.end(); ++it)
+      {
+        // Get label and key
+        int key = it->first.as<int>(); // <- key
+        Net::color color = std::make_tuple(
+          static_cast<u_char>(color_map[key][0].as<unsigned int>()),
+          static_cast<u_char>(color_map[key][1].as<unsigned int>()),
+          static_cast<u_char>(color_map[key][2].as<unsigned int>()));
+        _color_map[key] = color;
+      }
 
-  // Generate string map from xentropy indexes (that we'll get from argmax)
-  YAML::const_iterator it;
+      // Get learning class labels from yaml cfg
+      YAML::Node learning_class;
+      try
+      {
+        learning_class = data_cfg["learning_map_inv"];
+      }
+      catch (YAML::Exception& ex)
+      {
+        std::cerr << "Can't open one the label dictionary from cfg in " + data_cfg_path
+          << std::endl;
+        throw ex;
+      }
 
-  for (it = color_map.begin(); it != color_map.end(); ++it) {
-    // Get label and key
-    int key = it->first.as<int>();  // <- key
-    Net::color color = std::make_tuple(
-        static_cast<u_char>(color_map[key][0].as<unsigned int>()),
-        static_cast<u_char>(color_map[key][1].as<unsigned int>()),
-        static_cast<u_char>(color_map[key][2].as<unsigned int>()));
-    _color_map[key] = color;
-  }
+      // get the number of classes
+      _n_classes = learning_class.size();
 
-  // Get learning class labels from yaml cfg
-  YAML::Node learning_class;
-  try {
-    learning_class = data_cfg["learning_map_inv"];
-  } catch (YAML::Exception& ex) {
-    std::cerr << "Can't open one the label dictionary from cfg in " + data_cfg_path
-              << std::endl;
-    throw ex;
-  }
+      // remapping the colormap lookup table
+      _lable_map.resize(_n_classes);
+      for (it = learning_class.begin(); it != learning_class.end(); ++it)
+      {
+        int key = it->first.as<int>(); // <- key
+        _argmax_to_rgb[key] = _color_map[learning_class[key].as<unsigned int>()];
+        _lable_map[key] = learning_class[key].as<unsigned int>();
+      }
 
-  // get the number of classes
-  _n_classes = learning_class.size();
+      // get image size
+      // _img_h = arch_cfg["dataset"]["sensor"]["img_prop"]["height"].as<int>();
+      // _img_w = arch_cfg["dataset"]["sensor"]["img_prop"]["width"].as<int>();
+      // _img_d = 5; // range, x, y, z, remission
 
-  // remapping the colormap lookup table
-  _lable_map.resize(_n_classes);
-  for (it = learning_class.begin(); it != learning_class.end(); ++it) {
-    int key = it->first.as<int>();  // <- key
-    _argmax_to_rgb[key] = _color_map[learning_class[key].as<unsigned int>()];
-    _lable_map[key] = learning_class[key].as<unsigned int>();
-  }
+      // get normalization parameters
+      YAML::Node img_means, img_stds;
+      try
+      {
+        img_means = arch_cfg["dataset"]["sensor"]["img_means"];
+        img_stds = arch_cfg["dataset"]["sensor"]["img_stds"];
+      }
+      catch (YAML::Exception& ex)
+      {
+        std::cerr << "Can't open one the mean or std dictionary from cfg"
+          << std::endl;
+        throw ex;
+      }
+      // fill in means from yaml node
+      for (it = img_means.begin(); it != img_means.end(); ++it)
+      {
+        // Get value
+        float mean = it->as<float>();
+        // Put in indexing vector
+        _img_means.push_back(mean);
+      }
+      // fill in stds from yaml node
+      for (it = img_stds.begin(); it != img_stds.end(); ++it)
+      {
+        // Get value
+        float std = it->as<float>();
+        // Put in indexing vector
+        _img_stds.push_back(std);
+      }
+    }
 
-  // get image size
-  // _img_h = arch_cfg["dataset"]["sensor"]["img_prop"]["height"].as<int>();
-  // _img_w = arch_cfg["dataset"]["sensor"]["img_prop"]["width"].as<int>();
-  // _img_d = 5; // range, x, y, z, remission
+    /**
+     * @brief      Convert mask to color using dictionary as lut
+     *
+     * @param[in]  semantic_scan, The mask from argmax; num_points, the number of points in this scan.
+     *
+     * @return     the colored segmentation mask :)
+     */
+    std::vector<cv::Vec3b> Net::getLabels(const std::vector<uint32_t>& semantic_scan)
+    {
+      uint32_t num_points = semantic_scan.size();
+      std::vector<cv::Vec3b> labels;
 
-  // get normalization parameters
-  YAML::Node img_means, img_stds;
-  try {
-    img_means = arch_cfg["dataset"]["sensor"]["img_means"];
-    img_stds = arch_cfg["dataset"]["sensor"]["img_stds"];
-  } catch (YAML::Exception& ex) {
-    std::cerr << "Can't open one the mean or std dictionary from cfg"
-              << std::endl;
-    throw ex;
-  }
-  // fill in means from yaml node
-  for (it = img_means.begin(); it != img_means.end(); ++it) {
-    // Get value
-    float mean = it->as<float>();
-    // Put in indexing vector
-    _img_means.push_back(mean);
-  }
-  // fill in stds from yaml node
-  for (it = img_stds.begin(); it != img_stds.end(); ++it) {
-    // Get value
-    float std = it->as<float>();
-    // Put in indexing vector
-    _img_stds.push_back(std);
-  }
-}
-
-/**
- * @brief      Convert mask to color using dictionary as lut
- *
- * @param[in]  semantic_scan, The mask from argmax; num_points, the number of points in this scan.
- *
- * @return     the colored segmentation mask :)
- */
-std::vector<cv::Vec3b> Net::getLabels(const std::vector<uint32_t>& semantic_scan) {
-  uint32_t num_points = semantic_scan.size();
-  std::vector<cv::Vec3b> labels;
-
-  labels.resize(num_points);
-  for (uint32_t i = 0; i < num_points; ++i) {
-    uint32_t label = semantic_scan[i];
-    labels[i] = cv::Vec3b(std::get<0>(_argmax_to_rgb[label]),
-                          std::get<1>(_argmax_to_rgb[label]),
-                          std::get<2>(_argmax_to_rgb[label]));
-  }
-  return labels;
-}
-
-}  // namespace segmentation
-}  // namespace rangenet
+      labels.resize(num_points);
+      for (uint32_t i = 0; i < num_points; ++i)
+      {
+        uint32_t label = semantic_scan[i];
+        labels[i] = cv::Vec3b(std::get<0>(_argmax_to_rgb[label]),
+                              std::get<1>(_argmax_to_rgb[label]),
+                              std::get<2>(_argmax_to_rgb[label]));
+      }
+      return labels;
+    }
+  } // namespace segmentation
+} // namespace rangenet
