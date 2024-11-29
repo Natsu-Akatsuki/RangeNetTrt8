@@ -170,21 +170,12 @@ $ ./demo
         [libprotobuf ERROR google/protobuf/text_format.cc:298] Error parsing text-format onnx2trt_onnx.ModelProto: 1:1:
     </summary>
 
-The ONNX model is incomplete. Re-download the model.
+The ONNX model is incomplete. Please Re-download the model.
 
-</details> 
+</details>
 
 <details> 
     <summary>:question: <b>Issue 2:</b> 
-        Abnormal prediction results when upgrading TensorRT from 8.2 to 8.4. See <a href="https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8">issue#8</a>.
-    </summary>
-
-Skip optimization of weights in layer 235.
-
-</details> 
-
-<details> 
-    <summary>:question: <b>Issue 3:</b> 
         error: A __device__ variable cannot be marked constexpr
     </summary>
 
@@ -193,10 +184,10 @@ The CUDA version is too low. Upgrade CUDA (issue#4). For lower versions like CUD
 </details> 
 
 <details> 
-    <summary>:question: <b>Issue 4:</b> 
-        Segmentation fault when visualizing single point cloud frames in Ubuntu 22.04 using PCL
+    <summary>:question: <b>Issue 3:</b> 
+        Segmentation fault [Process finished with exit code 139 (interrupted by signal 11:SIGSEGV)] when visualizing single point cloud frames in Ubuntu 22.04 using PCL.
     </summary>
 
-Use PCL library version 1.13.0+. See more in [Here](https://github.com/PointCloudLibrary/pcl/pull/5252).
+Use PCL library version 1.13.0+. Please provide variable `PCL_DIR` in `cmake/ThirdParty.cmake`. See more in [Here](https://github.com/PointCloudLibrary/pcl/pull/5252).
 
 </details>

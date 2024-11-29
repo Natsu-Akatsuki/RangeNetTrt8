@@ -14,8 +14,8 @@ find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
 # 导入PCL库
-if (DEFINED ENV{PCL_DIR})
-  set(PCL_DIR $ENV{PCL_DIR})
+# set(PCL_DIR "$ENV{HOME}/pcl/share/pcl-1.14.1")
+if (DEFINED PCL_DIR)
   INFO_LOG("Using Custom PCL_DIR：${PCL_DIR}")
 endif ()
 

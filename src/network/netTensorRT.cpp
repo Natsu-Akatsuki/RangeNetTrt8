@@ -209,8 +209,11 @@ namespace rangenet
         pcl::PointCloud<pcl::PointXYZRGB> color_pointcloud;
         paintPointCloud(pointcloud_pcl, color_pointcloud, labels);
         pcl::visualization::PCLVisualizer viewer("3D Viewer");
+
+#if VTK_MAJOR_VERSION == 9 && ((VTK_MINOR_VERSION == 0 && (VTK_BUILD_VERSION == 2 || VTK_BUILD_VERSION == 3)) || (VTK_MINOR_VERSION == 1 && VTK_BUILD_VERSION == 0))
         // Suppress the VTK warning
         viewer.getRenderWindow()->GlobalWarningDisplayOff();
+#endif
 
         viewer.setBackgroundColor(0, 0, 0);
         viewer.addPointCloud<pcl::PointXYZRGB>(color_pointcloud.makeShared(), "sample cloud", 0);
