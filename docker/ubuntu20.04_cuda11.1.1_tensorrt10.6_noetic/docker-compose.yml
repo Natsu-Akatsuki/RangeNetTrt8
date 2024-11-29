@@ -1,0 +1,21 @@
+services:
+  liobench:
+    image: rangenet:ubuntu20.04_cuda11.1.1_tensorrt10.6_noetic
+    container_name: rangenet
+    volumes:
+      # Map host workspace to container workspace (Please change to your own path)
+      - /home/helios/rangenet:/home/rangenet/workspace/:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - DISPLAY=$DISPLAY
+      - NVIDIA_VISIBLE_DEVICES=all
+    tty: true
+    stdin_open: true
+    restart: 'no'
