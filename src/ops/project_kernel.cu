@@ -1,7 +1,14 @@
 #include "project_kernel.hpp"
 
+#if __CUDACC_VER_MAJOR__ == 11 and (__CUDACC_VER_MINOR__ <= 2)
+// See https://docs.nvidia.com/cuda/archive/11.1.0/cuda-c-programming-guide/#cpp11-device-variable
+__device__ float means[] = {12.12, 10.88, 0.23, -1.04, 0.21};
+__device__ float stds[] = {12.32, 11.47, 6.91, 0.86, 0.16};
+#elif __CUDACC_VER_MAJOR__ == 11 and (__CUDACC_VER_MINOR__ >= 3) or __CUDACC_VER_MAJOR__ >= 12
 __device__ constexpr float means[] = {12.12, 10.88, 0.23, -1.04, 0.21};
 __device__ constexpr float stds[] = {12.32, 11.47, 6.91, 0.86, 0.16};
+#endif
+
 // __device__ constexpr float means[] = {0.0, 0, 0.0, 0.0, 0.0};
 // __device__ constexpr float stds[] = {1.0, 1.0, 1.0, 1.0, 1.0};
 /*

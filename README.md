@@ -34,6 +34,7 @@ Step 2: Set up the deep learning environment (install NVIDIA driver, CUDA, Tenso
 | Ubuntu |           GPU           | TensorRT  |      CUDA       |    cuDNN    |         —          |
 |:------:|:-----------------------:|:---------:|:---------------:|:-----------:|:------------------:|
 | 20.04  |        TITAN RTX        |   8.2.3   | CUDA 11.4.r11.4 | cuDNN 8.2.4 | :heavy_check_mark: |
+| 20.04  |        TITAN RTX        | 10.6.0.26 |   CUDA 11.1.1   | cuDNN 8.0.5 | :heavy_check_mark: |
 | 20.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.0.5 | :heavy_check_mark: |
 | 22.04  | NVIDIA GeForce RTX 3060 |  8.2.5.1  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
 | 22.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 | cuDNN 8.8.0 | :heavy_check_mark: |
@@ -176,18 +177,20 @@ The ONNX model is incomplete. Please Re-download the model.
 
 <details> 
     <summary>:question: <b>Issue 2:</b> 
-        error: A __device__ variable cannot be marked constexpr
-    </summary>
-
-The CUDA version is too low. Upgrade CUDA (issue#4). For lower versions like CUDA 11.1, refer to issue#2.
-
-</details> 
-
-<details> 
-    <summary>:question: <b>Issue 3:</b> 
         Segmentation fault [Process finished with exit code 139 (interrupted by signal 11:SIGSEGV)] when visualizing single point cloud frames in Ubuntu 22.04 using PCL.
     </summary>
 
 Use PCL library version 1.13.0+. Please provide variable `PCL_DIR` in `cmake/ThirdParty.cmake`. See more in [Here](https://github.com/PointCloudLibrary/pcl/pull/5252).
 
 </details>
+
+## Roadmap
+
+- [x] Test ROS1 demo
+- [x] Resolve [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) (2023.07.01)
+- [x] Add English documentation (2024.11.19)
+- [x] Explain why using FP16 leads to precision degradation (2024.11.28) [See more in [Here](docs/the_reason_for_why_using__FP16_can_cause_accuracy_degradation.md)]
+- [ ] Provide a Docker environment
+- [ ] Add Pybind11 implementation
+- [ ] Resolve non-reproducibility
+- [ ] Refactor code to follow coding standards and improve readability

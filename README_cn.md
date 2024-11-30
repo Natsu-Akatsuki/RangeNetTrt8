@@ -6,6 +6,10 @@
 
 </div>
 
+> [!note]
+>
+> 简体中文版可能不会及时更新，以英文版为准
+
 ## Purpose
 
 1）**更新的依赖和 API**：将 [RangeNet 仓库](https://github.com/PRBonn/rangenet_lib)部署到 TensorRT8+，Ubuntu20.04+ 的环境中；移除 Boost 库；使用智能指针管理 TensorRT 对象和 GPU 显存的内存回收；提供 ROS 例程
