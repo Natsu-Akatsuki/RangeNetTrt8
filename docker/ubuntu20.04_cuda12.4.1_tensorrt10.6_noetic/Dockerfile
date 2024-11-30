@@ -1,6 +1,7 @@
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu20.04
 
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sources.list \
+    && rm /etc/apt/sources.list.d/* \
     && apt update \
     && DEBIAN_FRONTEND=noninteractive apt install -y \
         apt-utils \
@@ -26,6 +27,8 @@ RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sour
         python3-empy \
         python3-pip \
         software-properties-common \
+        sudo \
+        unzip \
         vim \
         wget \
     && rm -rf /var/lib/apt/lists/*

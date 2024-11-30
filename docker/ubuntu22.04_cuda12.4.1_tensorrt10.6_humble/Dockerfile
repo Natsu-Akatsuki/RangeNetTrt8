@@ -34,10 +34,10 @@ RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sour
     && rm -rf /var/lib/apt/lists/*
 
 
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+RUN curl --resolve raw.githubusercontent.com:443:185.199.108.133 -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
     && apt update \
-    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
+    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop python3-colcon-common-extensions
 
 
 # >>> nvidia-container-runtime >>>

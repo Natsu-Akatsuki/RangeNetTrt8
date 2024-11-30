@@ -1,0 +1,23 @@
+name: Cleanup failed workflows
+
+on:
+  workflow_dispatch:
+
+# sudo apt install jq
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Workflow Runs
+        run: |
+          curl -H "Authorization: token ${{ secrets.TOKEN_GITHUB }}" \
+          https://api.github.com/repos/${{ github.repository }}/actions/runs \
+          | jq '.workflow_runs[] | select(.conclusion=="failure") | .id' > failed_workflows.txt
+
+      - name: Delete Failed Workflow Runs
+        run: |
+          while read -r run_id; do
+            curl -X DELETE -H "Authorization: token ${{ secrets.TOKEN_GITHUB }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runs/$run_id
+          done < failed_workflows.txt
