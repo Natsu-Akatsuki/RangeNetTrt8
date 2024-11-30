@@ -8,7 +8,7 @@
 
 > [!note]
 >
-> 简体中文版可能不会及时更新，以英文版为准
+> 简体中文文档可能不会及时更新，以英文版为准
 
 ## Purpose
 
@@ -181,36 +181,9 @@ $ ./demo
 
 <details>
     <summary>:question: <b>问题 2：</b>
-        TensorRT 从 8.2 升级到 8.4 时，预测结果异常，详见 <a href="https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8">issue#8</a>
-    </summary>
-
-对 235 层的模型权重不进行优化。
-
-</details>
-
-<details>
-    <summary>:question: <b>问题 3：</b>
-        error: A __device__ variable cannot be marked constexpr        
-    </summary>
-        CUDA 版本过低，需要升级 CUDA 版本（详见 [issue#4](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/4)），若要保持较低的版本如 CUDA 11.1 则详见 [issue#2](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/2)
-</details>
-
-<details>
-    <summary>:question: <b>问题 4：</b>
         Ubuntu 22.04 环境下，跑单帧点云的用例，使用 PCL 进行可视化，会出现段错误
     </summary>
 
 具体参考：[Here](https://github.com/PointCloudLibrary/pcl/pull/5252). 需要使用 1.13.0+ 版本的 PCL 点云库。
 
 </details>
-
-## Roadmap
-
-- [x] 测试 ROS1 demo
-- [x] 解决 [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) 2023.07.01
-- [x] 追加英文文档 2024.11.19
-- [x] 解释为什么使用 FP16 会导致精度下降 2024.11.28
-- [ ] 追加 Pybind11 实现
-- [ ] 解决算法随机性的问题
-- [ ] 提供 Docker 环境
-- [ ] 遵循代码规范，重构代码，提高可读性

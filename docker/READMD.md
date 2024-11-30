@@ -48,7 +48,11 @@ $ bash build_image.sh
 
 ## Step 2 (Alternative): Pulling the image from Docker Hub
 
-TODO
+The image size is about 26.2G, so make sure you have enough space
+
+```bash
+$ docker pull
+```
 
 ## Step 3: Run the container
 
@@ -59,3 +63,21 @@ $ docker compose up
 # Open an another terminal
 $ docker exec -it rangenet /bin/bash
 ```
+
+## Step 4: Quick start
+
+```bash
+# In container
+$ git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/workspace/rangenet/src
+$ cd ~/workspace/rangenet/src/model
+$ wget -c https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/releases/download/v0.0.0-alpha/model.onnx
+$ mkdir build
+$ cd build && cmake .. && make -j4
+$ ./demo 
+```
+
+## Reference
+
+- https://github.com/pytorch/TensorRT/blob/main/docker/Dockerfile
+- https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/blob/422bfb0f97f91e7363de8b9fff3131fdc1558547/docker/Dockerfile-tensorrt8.2.2
+

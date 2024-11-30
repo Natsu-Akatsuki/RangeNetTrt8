@@ -1,6 +1,6 @@
 services:
   liobench:
-    image: rangenet:ubuntu20.04_cuda11.1.1_tensorrt10.6_noetic
+    image: rangenet:ubuntu22.04_cuda12.4.1_tensorrt10.6_humble
     container_name: rangenet
     volumes:
       # Map host workspace to container workspace (Please change to your own path)

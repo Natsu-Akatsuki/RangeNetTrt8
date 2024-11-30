@@ -7,12 +7,12 @@ from pathlib import Path
 import os
 
 # {22.04, 20.04}
-UBUNTU_VERSION = "20.04"
+UBUNTU_VERSION = "22.04"
 # {noetic, humble}
-ROS_VERSION = "noetic"
+ROS_VERSION = "humble"
 TENSORRT_VERSION = "10.6"
-# {11.1, 12.6.2}
-CUDA_VERSION = "11.1.1"
+# {11.1.1, 12.4.1 (require: nvidia-driver 550)}
+CUDA_VERSION = "12.4.1"
 
 target_dir = Path(__file__).resolve().parent
 prefix = f"ubuntu{UBUNTU_VERSION}_cuda{CUDA_VERSION}_tensorrt{TENSORRT_VERSION}_{ROS_VERSION}"
@@ -21,13 +21,14 @@ target_dir.mkdir(parents=True, exist_ok=True)
 
 
 def set_basic_image():
-    tmp_dict = {
-        "22.04": f"nvidia/cuda:{CUDA_VERSION}-cudnn-devel-ubuntu22.04",
-        "20.04": f"nvidia/cuda:{CUDA_VERSION}-cudnn8-devel-ubuntu20.04"}
-    return tmp_dict[UBUNTU_VERSION]
+    if CUDA_VERSION == "11.1.1":
+        return f"nvidia/cuda:{CUDA_VERSION}-cudnn8-devel-ubuntu{UBUNTU_VERSION}"
+    else:
+        return f"nvidia/cuda:{CUDA_VERSION}-cudnn-devel-ubuntu{UBUNTU_VERSION}"
 
 
 def set_ros():
+    # Note: the default bash is /bin/sh, thus we do not use "source"
     tmp_dict = {
         "noetic": """
 RUN DEBIAN_FRONTEND=noninteractive sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros-latest.list' \\
@@ -42,10 +43,10 @@ RUN DEBIAN_FRONTEND=noninteractive sh -c '. /etc/lsb-release && echo "deb http:/
         python3-pip \\
     && rm -rf /var/lib/apt/lists/*""",
         "humble": """
-RUN DEBIAN_FRONTEND=noninteractive curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \\
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \\
-    && apt update
-    && apt install ros-humble-desktop
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \\
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \\
+    && apt update \\
+    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
 """
     }
 
@@ -55,6 +56,7 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-a
 def set_apt():
     return """
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sources.list \\
+    && rm /etc/apt/sources.list.d/* \\
     && apt update \\
     && DEBIAN_FRONTEND=noninteractive apt install -y \\
         apt-utils \\
@@ -80,6 +82,8 @@ RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sour
         python3-empy \\
         python3-pip \\
         software-properties-common \\
+        sudo \\
+        unzip \\
         vim \\
         wget \\
     && rm -rf /var/lib/apt/lists/*
@@ -195,7 +199,7 @@ RUN cd ~ \\
 
 def setup_workspace():
     return """
-RUN git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/workspace/rangenet/src
+RUN git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/rangenet/rangenet/src
 """
 
 
@@ -214,7 +218,7 @@ def generate_dockerfile():
         f.write(f"{set_workdir()}\n")
         f.write(f"{set_bashrc()}\n")
         f.write(f"{download_libtorch()}\n")
-        f.write(f"{setup_workspace()}\n")
+        # f.write(f"{setup_workspace()}\n")
 
 
 def set_docker_compose():
@@ -225,7 +229,7 @@ def set_docker_compose():
     container_name: rangenet
     volumes:
       # Map host workspace to container workspace (Please change to your own path)
-      - {user_home}/rangenet:/home/rangenet/workspace/:rw
+      - {user_home}/rangenet:/home/rangenet/rangenet/:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     deploy:
       resources:
@@ -237,6 +241,8 @@ def set_docker_compose():
     environment:
       - DISPLAY=$DISPLAY
       - NVIDIA_VISIBLE_DEVICES=all
+      - LANG=C.UTF-8 # Fix garbled Chinese text
+      - LC_ALL=C.UTF-8
     tty: true
     stdin_open: true
     restart: 'no'

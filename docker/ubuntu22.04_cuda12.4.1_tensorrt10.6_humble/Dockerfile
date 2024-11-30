@@ -1,6 +1,7 @@
-FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sources.list \
+    && rm /etc/apt/sources.list.d/* \
     && apt update \
     && DEBIAN_FRONTEND=noninteractive apt install -y \
         apt-utils \
@@ -26,22 +27,18 @@ RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sour
         python3-empy \
         python3-pip \
         software-properties-common \
+        sudo \
+        unzip \
         vim \
         wget \
     && rm -rf /var/lib/apt/lists/*
 
 
-RUN DEBIAN_FRONTEND=noninteractive sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros-latest.list' \
-    && apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 \
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
     && apt update \
-    && DEBIAN_FRONTEND=noninteractive apt install -y ros-noetic-desktop-full \
-        python3-catkin-tools \
-        python3-rosdep \
-        python3-rosinstall \
-        python3-rosinstall-generator \
-        python3-wstool \
-        python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop
+
 
 # >>> nvidia-container-runtime >>>
 ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
@@ -52,8 +49,8 @@ ENV __GLX_VENDOR_LIBRARY_NAME=nvidia
 
 # >>> Install TensorRT >>>
 ENV TENSORRT_VERSION 10.6
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub \
-    && add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /" \
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub \
+    && add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" \
     && apt update \
     && TENSORRT_MAJOR_VERSION=`echo ${TENSORRT_VERSION} | cut -d '.' -f 1` \
     && DEBIAN_FRONTEND=noninteractive apt install -y \
@@ -70,11 +67,6 @@ RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/
 
 SHELL ["/bin/bash", "-c"]
 
-# Fix https://github.com/ros-visualization/rviz/issues/1780.
-RUN DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:beineri/opt-qt-5.12.10-focal -y \
-    && apt update \
-    && apt install -y qt512charts-no-lgpl qt512svg qt512xmlpatterns qt512tools qt512translations qt512graphicaleffects qt512quickcontrols2 qt512wayland qt512websockets qt512serialbus qt512serialport qt512location qt512imageformats qt512script qt512scxml qt512gamepad qt5123d
-    
 # Install hstr
 RUN DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:ultradvorka/ppa -y \
     && apt update \
@@ -91,8 +83,8 @@ RUN useradd ${USER_NAME} -m -G sudo -u 1000 -s /bin/bash && echo ${USER_NAME}:12
 USER ${USER_NAME}
 
 WORKDIR /home/${USER_NAME}
-RUN echo "source /opt/qt512/bin/qt512-env.sh" >> ~/.bashrc
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 
 # >>> Download libtorch >>>
 RUN cd ~ \
