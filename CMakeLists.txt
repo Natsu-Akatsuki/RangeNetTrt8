@@ -9,15 +9,7 @@ if (DEFINED PERFORMANCE_LOG)
 endif ()
 
 # >>> 编译选项 >>>
-# 设置 C++标准
-# note：此处 std=c++14 不能改为 std=c++17，否则会报错（与 NVCC 有关），具体原理未知
-INFO_LOG("CMAKE_BUILD_TYPE：${CMAKE_BUILD_TYPE}")
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RELEASE)
-endif ()
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++14 -O3")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++14 -O0")
-set(CMAKE_CXX_STANDARD 17)
+include(cmake/Compiler.cmake)
 
 # >>> 导入 ROS 架构下的相关代码 >>>
 include(cmake/ROS.cmake)
@@ -35,7 +27,7 @@ add_library(pointcloud_io SHARED src/utils/pointcloud_io.cpp)
 target_link_libraries(pointcloud_io ${PCL_LIBRARIES})
 
 # CUDA 算子
-cuda_add_library(project_ops src/ops/project_kernel.cu src/ops/project.cpp)
+add_library(project_ops src/ops/project_kernel.cu src/ops/project.cpp)
 
 # 后处理
 include_directories(src/utils)
@@ -78,11 +70,10 @@ if (DEFINED ENV{ROS_VERSION})
       fmt
     )
   elseif ($ENV{ROS_VERSION} STREQUAL 2)
+    ament_auto_find_build_dependencies()
+    find_package(Boost REQUIRED COMPONENTS date_time)
     INFO_LOG("ROS2 is available!")
     ament_auto_add_executable(ros2_demo src/ros2_demo.cpp)
-    ament_target_dependencies(ros2_demo
-      OpenCV
-    )
     target_link_libraries(ros2_demo
       ${OpenCV_LIBS}
       rangenet_lib
