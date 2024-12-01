@@ -1,7 +1,7 @@
 # See https://github.com/docker/metadata-action
 # See https://github.com/docker/build-push-action?tab=readme-ov-file#path-context
 # See https://github.com/marketplace/actions/maximize-build-disk-space
-name: Build images
+name: Build image ubuntu20.04_cuda12.4.1_tensorrt10.6_noetic
 
 on:
   workflow_dispatch:

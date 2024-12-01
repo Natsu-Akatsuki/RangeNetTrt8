@@ -1,12 +1,14 @@
 # [RangeNet-TensorRT](https://github.com/Natsu-Akatsuki/RangeNet-TensorRT)
 
+🎉 This project has been a pleasure, allowing me to repay technical debt, learn how to locate bugs during model deployment, gain experience with GitHub Actions, and explore CUDA programming. I greatly appreciate the valuable feedback from others that has contributed to improving the project. I hope that this project will be of use to you.
+
 <div align="center">
 
 [English](README.md) | [简体中文](README_cn.md)
 
 </div>
 
-## Purpose
+## 1. Purpose
 
 1. **Use more newer dependencies and APIs**. Specifically, we deploy the [RangeNet repository](https://github.com/PRBonn/rangenet_lib) in an environment with TensorRT 8+, Ubuntu 20.04+, remove Boost dependency, manage TensorRT objects and GPU memory with smart pointers, and provide ROS demo.
 
@@ -17,11 +19,17 @@
 	<img src="assets/000000.png" alt="img" width=50% height=50% />
 </p>
 
-## Prerequisites
+## 2. Installation
+
+### 2.1 Docker installation
+
+We provide a Docker installation, please see more in [docker/README.md](docker/README.md)
+
+### 2.2 Source installation
 
 Step 1: Download and Extract libtorch
 
-> **Note**  
+> [!note]
 > Using the Torch library from Conda was observed to slow down the post-processing stage from 6 ms to 30 ms.
 
 ```bash
@@ -32,7 +40,7 @@ $ unzip libtorch.zip
 Step 2: Set up the deep learning environment (install NVIDIA driver, CUDA, TensorRT, cuDNN). The tested configurations are listed below. At least <u>3000 MB</u> of GPU memory is required.
 
 | Ubuntu |           GPU           | TensorRT  |      CUDA       |      cuDNN       |         —          |
-| :----: | :---------------------: | :-------: | :-------------: | :--------------: | :----------------: |
+|:------:|:-----------------------:|:---------:|:---------------:|:----------------:|:------------------:|
 | 20.04  |        TITAN RTX        |   8.2.3   | CUDA 11.4.r11.4 |   cuDNN 8.2.4    | :heavy_check_mark: |
 | 20.04  |        TITAN RTX        | 10.6.0.26 |   CUDA 11.1.1   |   cuDNN 8.0.5    | :heavy_check_mark: |
 | 20.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 |   cuDNN 8.0.5    | :heavy_check_mark: |
@@ -85,6 +93,13 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CUDA_LIB_PATH}:${TENSORRT_LIB_PATH}
 
 Step 3: (Optional, if ROS components are needed). Please install ROS1 (Noetic) or ROS2 (Humble).
 
+```bash
+# Install ROS
+$ ...
+# Install extra dependency
+$ sudo apt install ros-${ROS_DISTRO}-pcl-ros
+```
+
 Step 4: Install apt-related and Python packages
 
 ```bash
@@ -92,19 +107,17 @@ $ sudo apt install build-essential python3-dev python3-pip apt-utils git cmake l
 $ pip install catkin_tools trollius numpy
 ```
 
-## Install
-
-Step 1: Clone the Repository
+Step 5: Clone the Repository
 
 ```bash
-$ git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/RangeNet_TensorRT/src
+$ git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/rangenet/src/rangenet/
 ```
 
-Step 2: Import model files and datasets.
+Step 6: Import model files and datasets.
 
 ```bash
 # Download model files
-$ wget -c https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/releases/download/v0.0.0-alpha/model.onnx
+$ wget -c https://github.com/Natsu-Akatsuki/RangeNet-TensorRT/releases/download/v0.0.0-alpha/model.onnx -O ~/rangenet/src/rangenet/model/model.onnx
 ```
 
 Download datasets: see [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvqMOrA?pwd=9394).
@@ -127,7 +140,7 @@ Download datasets: see [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvq
 
 </details>
 
-## Usage
+## 3. Usage
 
 The first run may take some time to generate the TensorRT optimized engine.
 
@@ -142,14 +155,14 @@ The first run may take some time to generate the TensorRT optimized engine.
 
 ```bash
 # >>> ROS1 >>>
-$ cd ~/rangetnet_pp/
+$ cd ~/rangetnet/
 $ catkin build
 $ source devel/setup.bash
 $ roslaunch rangenet_pp ros1_rangenet.launch
 $ roslaunch rangenet_pp ros1_bag.launch
 
 # >>> ROS2 >>>
-$ cd ~/rangetnet_pp/
+$ cd ~/rangetnet/
 $ colcon build --symlink-install
 $ source install/setup.bash
 $ ros2 launch rangenet_pp ros2_rangenet.launch
@@ -168,10 +181,12 @@ $ ros2 launch rangenet_pp ros2_bag.launch
 
 ```bash
 # Modify the parameters in config/infer.yaml
+$ cd ~/rangenet/src/rangenet/
 $ mkdir build
 $ cd build
+
 # To display inference time: cmake -DPERFORMANCE_LOG=ON .. && make
-$ cmake .. && make
+$ unset ROS_VERSION && cmake .. && make
 $ ./demo
 ```
 
@@ -183,7 +198,7 @@ $ ./demo
 
 </details>
 
-## FAQ
+## 4. FAQ
 
 <details> 
     <summary>:question: <b>Issue 1:</b> 
@@ -209,7 +224,7 @@ Use PCL library version 1.13.0+. Please provide variable `PCL_DIR` in `cmake/Thi
 - [x] Resolve [issue#8](https://github.com/Natsu-Akatsuki/RangeNetTrt8/issues/8) (2023.07.01)
 - [x] Add English documentation (2024.11.19)
 - [x] Explain why using FP16 leads to precision degradation [See more in [Here](docs/the_reason_for_why_using__FP16_can_cause_accuracy_degradation.md)] (2024.11.28)
-- [ ] Provide a Docker environment (2024.11.30)
+- [x] Provide a Docker environment (2024.11.30)
 - [ ] Add Pybind11 implementation
 - [ ] Resolve non-reproducibility
 - [ ] Refactor code to follow coding standards and improve readability

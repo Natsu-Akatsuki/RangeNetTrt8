@@ -1,6 +1,7 @@
+from pathlib import Path
 import argparse
 import os
-from pathlib import Path
+import re
 
 
 def parse_args():
@@ -38,7 +39,7 @@ RUN DEBIAN_FRONTEND=noninteractive sh -c '. /etc/lsb-release && echo "deb http:/
         python3-pip \\
     && rm -rf /var/lib/apt/lists/*""",
             "humble": """
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \\
+RUN curl --resolve raw.githubusercontent.com:443:185.199.108.133 -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \\
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \\
     && apt update \\
     && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop python3-colcon-common-extensions ros-humble-pcl-ros
@@ -181,6 +182,22 @@ RUN cd ~ \\
 RUN git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/rangenet/rangenet/src
 """
 
+    def download_pcl():
+        return """# Fix https://github.com/PointCloudLibrary/pcl/pull/5252
+RUN cd ~ \\
+    && wget -c https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.13.1/source.zip \\
+    && unzip source.zip \\
+    && rm source.zip \\
+    && cd pcl \\
+    && mkdir build \\
+    && cd build \\
+    && cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_visualization=ON -DBUILD_apps=OFF -DBUILD_examples=OFF -DBUILD_tools=OFF -DBUILD_samples=OFF .. \\
+    && make -j4 \\
+    && echo "123" | sudo -S make install \\
+    && cd ~ \\
+    && rm -rf pcl
+"""
+
     target_path = target_dir / "Dockerfile"
     with open(target_path, "w") as f:
         f.write(f"FROM {set_basic_image()}\n")
@@ -196,6 +213,8 @@ RUN git clone https://github.com/Natsu-Akatsuki/RangeNet-TensorRT ~/rangenet/ran
         f.write(f"{set_bashrc()}\n")
         f.write(f"{download_libtorch()}\n")
         # f.write(f"{setup_workspace()}\n")
+        if ubuntu_version == "22.04":
+            f.write(f"{download_pcl()}\n")
 
 
 def set_docker_compose(user_home, prefix):
@@ -243,14 +262,25 @@ def generate_build_bash(target_dir, prefix):
         f.write(f"{set_build_bash(prefix)}")
 
 
+def generate_build_image_workflow(prefix):
+    template_path = Path(__file__).resolve().parent / "build_image_template.yml"
+    with open(template_path, 'r') as file:
+        content = file.read()
+
+    content = re.sub(r'\${{ PREFIX }}', prefix, content)
+    target_path = Path(__file__).resolve().parent.parent / '.github/workflows' / f"build_image_{prefix}.yml"
+    with open(target_path, 'w') as file:
+        file.write(content)
+
+
 def main():
     args = parse_args()
 
     if 1:
         # {22.04, 20.04}
-        ubuntu_version = "20.04"
+        ubuntu_version = "22.04"
         # {noetic, humble}
-        ros_version = "noetic"
+        ros_version = "humble"
         tensorrt_version = "10.6"
         # {11.1.1, 12.4.1 (require: nvidia-driver 550)}
         cuda_version = "12.4.1"
@@ -268,6 +298,7 @@ def main():
     user_home = os.getenv("HOME")
     generate_docker_compose(target_dir, user_home, prefix)
     generate_build_bash(target_dir, prefix)
+    generate_build_image_workflow(prefix)
 
 
 if __name__ == "__main__":

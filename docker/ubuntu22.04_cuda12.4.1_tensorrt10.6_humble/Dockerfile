@@ -37,7 +37,7 @@ RUN sed -i s@/archive.ubuntu.com/@/mirrors.tuna.tsinghua.edu.cn/@g /etc/apt/sour
 RUN curl --resolve raw.githubusercontent.com:443:185.199.108.133 -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
     && apt update \
-    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop python3-colcon-common-extensions
+    && DEBIAN_FRONTEND=noninteractive apt install -y ros-humble-desktop python3-colcon-common-extensions ros-humble-pcl-ros
 
 
 # >>> nvidia-container-runtime >>>
@@ -93,3 +93,17 @@ RUN cd ~ \
     && rm libtorch-cxx11-abi-shared-with-deps-1.10.0+cu111.zip \
     && echo "export Torch_DIR=${HOME}/libtorch/share/cmake/Torch" >> ~/.bashrc
     
+# Fix https://github.com/PointCloudLibrary/pcl/pull/5252
+RUN cd ~ \
+    && wget -c https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.13.1/source.zip \
+    && unzip source.zip \
+    && rm source.zip \
+    && cd pcl \
+    && mkdir build \
+    && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_visualization=ON -DBUILD_apps=OFF -DBUILD_examples=OFF -DBUILD_tools=OFF -DBUILD_samples=OFF .. \
+    && make -j4 \
+    && echo "123" | sudo -S make install \
+    && cd ~ \
+    && rm -rf pcl
+

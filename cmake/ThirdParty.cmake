@@ -14,7 +14,8 @@ find_package(yaml-cpp REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIR})
 
 # 导入PCL库
-# set(PCL_DIR "$ENV{HOME}/pcl/share/pcl-1.14.1")
+# This is a custom PCL_DIR for docker of Ubuntu-22.04. You could change it to your own PCL_DIR.
+set(PCL_DIR "/usr/local/share/pcl-1.13")
 if (DEFINED PCL_DIR)
   INFO_LOG("Using Custom PCL_DIR：${PCL_DIR}")
 endif ()
