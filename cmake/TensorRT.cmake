@@ -2,11 +2,6 @@
 ## include(cmake/TensorRT.cmake)
 ## CUDA_LIBRARIES, CUDNN_LIBRARY, TENSORRT_LIBRARIES
 
-# suppress eigen warning: "-Wcpp Please use cuda_runtime_api.h or cuda_runtime.h instead"
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=deprecated-declarations -Wno-deprecated-declarations -Wno-deprecated -Wno-cpp")
-# suppress the nvcc warning: "__device__ anotation is ignored on a function"
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
-
 # >>> CUDA >>>
 option(CUDA_AVAIL "CUDA available" OFF)
 find_package(CUDA)

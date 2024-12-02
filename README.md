@@ -53,16 +53,18 @@ Step 2: Set up the deep learning environment (install NVIDIA driver, CUDA, Tenso
 
 > [!note]
 >
-> According to your hardware, you must choose the appropriate version of CUDA
+> You must choose the appropriate version of CUDA based on your Compute Capability. For example, if your want to use Compute Capability 89, you must choose CUDA 11.8+.
+>
+> You can see  `Compute Capability` in https://developer.nvidia.com/cuda-gpus#compute.
 
-|   GPU Hardware Architecture    |           Relevant GPUs            | Minimum CUDA Version |
-|:------------------------------:|:----------------------------------:|:--------------------:|
-|    Ampere Architecture（8.6）    | RTX 3060，RTX3070，RTX 3080，RTX 3090 |      CUDA 11.1       |
-| Ada Lovelace Architecture（8.9） |         RTX 4090, RTX 4080         |      CUDA 11.8       |
+| GPU Hardware Architecture | Compute Capability |           Relevant GPUs            | Minimum CUDA Version |
+|:-------------------------:|:------------------:|:----------------------------------:|:--------------------:|
+|    Ampere Architecture    |         86         | RTX 3060，RTX3070，RTX 3080，RTX 3090 |      CUDA 11.1       |
+| Ada Lovelace Architecture |         89         |         RTX 4090, RTX 4080         |      CUDA 11.8       |
 
 > [!note]
 >
-> According to your nvidia-driver, you must choose the appropriate version of CUDA
+> You must choose the appropriate version of CUDA based on your nvidia-driver.
 
 | nvidia-driver Version | Maximum CUDA Version |
 |:---------------------:|:--------------------:|
@@ -142,7 +144,16 @@ Download datasets: see [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvq
 
 ## 3. Usage
 
-The first run may take some time to generate the TensorRT optimized engine.
+> [!note]
+>
+> The first run may take some time to generate the TensorRT optimized engine.
+
+> [!note]
+>
+> Since we use set(CMAKE_CUDA_STANDARD 17), a feature introduced in [CMake 3.18](https://cmake.org/cmake/help/latest/prop_tgt/CUDA_STANDARD.html), it requires at least version 3.18. Unfortunately, the default CMake version in Ubuntu 20.04 is 3.16.3. Therefore, we provide a workaround to use a higher version of CMake with minimal effort.
+> ```bash
+> $ pip3 install --user cmake==3.18
+> $ echo 'export PATH=${HOME}/.local/bin:${PATH}' >> ~/.bashrc
 
 <details>
     <summary>:wrench: <b>Usage 1：</b>

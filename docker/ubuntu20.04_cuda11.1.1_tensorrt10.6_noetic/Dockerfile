@@ -104,3 +104,7 @@ RUN cd ~ \
     && rm libtorch-cxx11-abi-shared-with-deps-1.10.0+cu111.zip \
     && echo "export Torch_DIR=${HOME}/libtorch/share/cmake/Torch" >> ~/.bashrc
     
+# >>> Download CMake >>>
+RUN pip3 install --user cmake==3.18 \
+    && echo 'export PATH=${HOME}/.local/bin:${PATH}' >> ~/.bashrc
+

@@ -198,6 +198,12 @@ RUN cd ~ \\
     && rm -rf pcl
 """
 
+    def download_cmake():
+        return """# >>> Download CMake >>>
+RUN pip3 install --user cmake==3.18 \\
+    && echo 'export PATH=${HOME}/.local/bin:${PATH}' >> ~/.bashrc
+"""
+
     target_path = target_dir / "Dockerfile"
     with open(target_path, "w") as f:
         f.write(f"FROM {set_basic_image()}\n")
@@ -215,6 +221,8 @@ RUN cd ~ \\
         # f.write(f"{setup_workspace()}\n")
         if ubuntu_version == "22.04":
             f.write(f"{download_pcl()}\n")
+        if ubuntu_version == "20.04":
+            f.write(f"{download_cmake()}\n")
 
 
 def set_docker_compose(user_home, prefix):
@@ -278,12 +286,12 @@ def main():
 
     if 1:
         # {22.04, 20.04}
-        ubuntu_version = "22.04"
+        ubuntu_version = "20.04"
         # {noetic, humble}
-        ros_version = "humble"
+        ros_version = "noetic"
         tensorrt_version = "10.6"
         # {11.1.1, 12.4.1 (require: nvidia-driver 550)}
-        cuda_version = "12.4.1"
+        cuda_version = "11.1.1"
     else:
         ubuntu_version = args.ubuntu_version
         ros_version = args.ros_version
