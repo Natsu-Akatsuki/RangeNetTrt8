@@ -39,17 +39,17 @@ $ unzip libtorch.zip
 
 Step 2: Set up the deep learning environment (install NVIDIA driver, CUDA, TensorRT, cuDNN). The tested configurations are listed below. At least <u>3000 MB</u> of GPU memory is required.
 
-| Ubuntu |           GPU           | TensorRT  |      CUDA       |      cuDNN       |         —          |
-|:------:|:-----------------------:|:---------:|:---------------:|:----------------:|:------------------:|
-| 20.04  |        TITAN RTX        |   8.2.3   | CUDA 11.4.r11.4 |   cuDNN 8.2.4    | :heavy_check_mark: |
-| 20.04  |        TITAN RTX        | 10.6.0.26 |   CUDA 11.1.1   |   cuDNN 8.0.5    | :heavy_check_mark: |
-| 20.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 |   cuDNN 8.0.5    | :heavy_check_mark: |
-| 20.04  | NVIDIA GeForce RTX 4070 |  10.6.0   | CUDA 11.3.r12.4 | cuDNN 9.1.0.70-1 | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 |  8.2.5.1  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.1.5  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 |  8.4.3.1  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 |  8.6.1.6  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
-| 22.04  | NVIDIA GeForce RTX 3060 | 10.6.0.26 | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
+| Ubuntu |                         GPU                          | TensorRT  |      CUDA       |      cuDNN       |         —          |
+|:------:|:----------------------------------------------------:|:---------:|:---------------:|:----------------:|:------------------:|
+| 20.04  |                      TITAN RTX                       |   8.2.3   | CUDA 11.4.r11.4 |   cuDNN 8.2.4    | :heavy_check_mark: |
+| 20.04  |               NVIDIA GeForce RTX 3060                |  8.4.1.5  | CUDA 11.3.r11.3 |   cuDNN 8.0.5    | :heavy_check_mark: |
+| 20.04  | NVIDIA GeForce RTX 3060<br />NVIDIA GeForce RTX 4070 | 10.6.0.26 |  CUDA 11.1.105  | cuDNN  8.0.5.39  | :heavy_check_mark: |
+| 20.04  | NVIDIA GeForce RTX 3060<br />NVIDIA GeForce RTX 4070 | 10.6.0.26 | CUDA 12.4.r12.4 | cuDNN 9.1.0.70-1 | :heavy_check_mark: |
+| 22.04  |               NVIDIA GeForce RTX 3060                |  8.2.5.1  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
+| 22.04  |               NVIDIA GeForce RTX 3060                |  8.4.1.5  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
+| 22.04  |               NVIDIA GeForce RTX 3060                |  8.4.3.1  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
+| 22.04  |               NVIDIA GeForce RTX 3060                |  8.6.1.6  | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
+| 22.04  |               NVIDIA GeForce RTX 3060                | 10.6.0.26 | CUDA 11.3.r11.3 |   cuDNN 8.8.0    | :heavy_check_mark: |
 
 > [!note]
 >
