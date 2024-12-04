@@ -22,7 +22,7 @@ endif ()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-cpp -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
 
 execute_process(
-  COMMAND nvidia-smi --query-gpu=compute_cap --format=csv,noheader
+  COMMAND nvidia-smi --query-gpu=compute_cap --format=csv,noheader -i 0
   RESULT_VARIABLE result
   OUTPUT_VARIABLE compute_cap
   ERROR_VARIABLE error
