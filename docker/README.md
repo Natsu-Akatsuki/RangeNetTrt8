@@ -83,6 +83,7 @@ After the image is built, you can run the container with the following command
 # Please replace the image name with the name of the image you built or pulled
 $ cd ~/rangenet/src/rangenet/docker/ubuntu20.04_cuda11.1.1_tensorrt10.6_noetic
 
+# Please change the mount path in docker-compose.yml
 $ docker compose up
 # Open an another terminal
 $ docker exec -it rangenet /bin/bash

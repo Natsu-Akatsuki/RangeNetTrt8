@@ -225,14 +225,14 @@ RUN pip3 install --user cmake==3.18 \\
             f.write(f"{download_cmake()}\n")
 
 
-def set_docker_compose(user_home, prefix):
+def set_docker_compose(prefix):
     return f"""services:
   liobench:
     image: rangenet:{prefix}
     container_name: rangenet
     volumes:
       # Map host workspace to container workspace (Please change to your own path)
-      - {user_home}/rangenet:/home/rangenet/rangenet/:rw
+      - $HOME/rangenet:/home/rangenet/rangenet/:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     deploy:
       resources:
@@ -252,10 +252,10 @@ def set_docker_compose(user_home, prefix):
 """
 
 
-def generate_docker_compose(target_dir, user_home, prefix):
+def generate_docker_compose(target_dir, prefix):
     target_path = target_dir / "docker-compose.yml"
     with open(target_path, "w") as f:
-        f.write(f"{set_docker_compose(user_home, prefix)}")
+        f.write(f"{set_docker_compose(prefix)}")
 
 
 def set_build_bash(prefix):
@@ -303,8 +303,7 @@ def main():
     target_dir = target_dir / prefix
 
     generate_dockerfile(ubuntu_version, ros_version, tensorrt_version, cuda_version, target_dir)
-    user_home = os.getenv("HOME")
-    generate_docker_compose(target_dir, user_home, prefix)
+    generate_docker_compose(target_dir, prefix)
     generate_build_bash(target_dir, prefix)
     generate_build_image_workflow(prefix)
 

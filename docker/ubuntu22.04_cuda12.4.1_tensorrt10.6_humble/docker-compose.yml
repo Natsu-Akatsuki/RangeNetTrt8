@@ -4,7 +4,7 @@ services:
     container_name: rangenet
     volumes:
       # Map host workspace to container workspace (Please change to your own path)
-      - /home/helios/rangenet:/home/rangenet/rangenet/:rw
+      - $HOME/rangenet:/home/rangenet/rangenet/:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     deploy:
       resources:
