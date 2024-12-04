@@ -167,7 +167,8 @@ Download datasets: see [Baidu Cloud](https://pan.baidu.com/s/1iXSWaEfZsfpRps1yvq
 ```bash
 # >>> ROS1 >>>
 $ cd ~/rangetnet/
-$ catkin build
+# USE -Wno-dev to suppress PCL WARNING
+$ catkin build --cmake-args -Wno-dev
 $ source devel/setup.bash
 $ roslaunch rangenet_pp ros1_rangenet.launch
 $ roslaunch rangenet_pp ros1_bag.launch
@@ -197,7 +198,7 @@ $ mkdir build
 $ cd build
 
 # To display inference time: cmake -DPERFORMANCE_LOG=ON .. && make
-$ unset ROS_VERSION && cmake .. && make
+$ unset ROS_VERSION && cmake -Wno-dev .. && make -j4
 $ ./demo
 ```
 
