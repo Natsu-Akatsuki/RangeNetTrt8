@@ -40,7 +40,7 @@ target_link_libraries(rangenet_lib
   ${YAML_CPP_LIBRARIES}
   ${OpenCV_LIBS}
   ${TENSORRT_LIBRARIES}
-  ${CUDA_LIBRARIES}
+  CUDA::cudart
   ${TORCH_LIBRARIES}
   ${PCL_LIBRARIES}
   project_ops

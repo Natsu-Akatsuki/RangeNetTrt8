@@ -4,20 +4,16 @@
 
 # >>> CUDA >>>
 option(CUDA_AVAIL "CUDA available" OFF)
-find_package(CUDA)
-if (CUDA_FOUND)
-  find_library(CUBLAS_LIBRARIES cublas HINTS
-    ${CUDA_TOOLKIT_ROOT_DIR}/lib64
-    ${CUDA_TOOLKIT_ROOT_DIR}/lib
-  )
-  include_directories(${CUDA_INCLUDE_DIRS})
+find_package(CUDAToolkit)
+if (CUDAToolkit_FOUND)
+  include_directories(${CUDAToolkit_INCLUDE_DIRS})
   INFO_LOG("CUDA is available!")
   set(CUDA_AVAIL ON)
 else ()
   ERROR_LOG("CUDA NOT FOUND")
   set(CUDA_AVAIL OFF)
-endif (CUDA_FOUND)
-INFO_LOG("CUDA Libs: ${CUDA_LIBRARIES}")
+endif (CUDAToolkit_FOUND)
+INFO_LOG("CUDA Library Directory: ${CUDAToolkit_LIBRARY_DIR}")
 INFO_LOG("CUDA Headers: ${CUDA_INCLUDE_DIRS}")
 
 # >>> CUDNN >>>
